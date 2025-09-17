@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net481</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>SharpFAI</RootNamespace>
+    <AssemblyName>SharpFAI</AssemblyName>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    
+    <!-- NuGet Package Configuration -->
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageId>SharpFAI</PackageId>
+    <PackageVersion>1.0.0</PackageVersion>
+    <Authors>StArray</Authors>
+    <Company>StArray</Company>
+    <Product>SharpFAI</Product>
+    <Description>ADOFAI Level Parse Library - A C# library for parsing and manipulating ADOFAI (A Dance of Fire and Ice) level file</Description>
+    <PackageTags>ADOFAI;Game;Level;Parser;JSON</PackageTags>
+    <PackageProjectUrl>https://github.com/StArray/SharpFAI</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/StArray/SharpFAI</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
+    <Copyright>Copyright StArray© 2025</Copyright>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+  </ItemGroup>
+
+</Project>

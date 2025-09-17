@@ -1,0 +1,8 @@
+*.user
+bin
+obj
+packages
+*.bat
+*.nupkg
+.idea
+.codebuddy

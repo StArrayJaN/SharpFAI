@@ -1,0 +1,300 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Text;
+using Newtonsoft.Json.Linq;
+
+namespace SharpFAI.Util;
+
+/// <summary>
+/// Utility class for ADOFAI level calculations and operations
+/// ADOFAI关卡实用工具类
+/// </summary>
+public static class LevelUtils
+{
+    private static List<double> noteTimesCache = new List<double>();
+    private static List<double> noteTimesCacheWithOffset = new List<double>();
+    private static List<double> allSpeedChange = new List<double>();
+    
+    /// <summary>
+    /// Calculates note timing for each tile in the level
+    /// 计算关卡中每个瓦片的音符时间
+    /// </summary>
+    /// <param name="l">The level to calculate note times for / 要计算音符时间的关卡</param>
+    /// <param name="addOffset">Whether to add the level settings offset to the times (default: false) / 是否将关卡设置中的偏移添加到时间中（默认：false）</param>
+    /// <returns>List of note times in milliseconds / 以毫秒为单位的音符时间列表</returns>
+    public static List<double> GetNoteTimes(this Level l, bool addOffset = false)
+    {
+        if (noteTimesCache.Count > 0 && !addOffset) return noteTimesCache;
+        if (noteTimesCacheWithOffset.Count > 0 && addOffset) return noteTimesCacheWithOffset;
+        List<double> angleDataList = l.angles;
+        JArray levelEvents = l.actions;
+        JArray parsedChart = new JArray();
+
+        // 初步处理轨道数据
+        for (int i = 0; i < angleDataList.Count; i++)
+        {
+            double angleData = angleDataList[i];
+            if (Math.Abs(angleData - 999) < 0.01)
+            {
+                JObject temp = new JObject
+                {
+                    ["angle"] = Fmod(angleDataList[i - 1] + 180, 360),
+                    ["bpm"] = "unSet",
+                    ["direction"] = 0,
+                    ["extraHold"] = 0,
+                    ["midr"] = true,
+                    ["MultiPlanet"] = "-1"
+                };
+
+                parsedChart.Add(temp);
+            }
+            else
+            {
+                JObject temp = new JObject
+                {
+                    ["angle"] = Fmod(angleData, 360),
+                    ["bpm"] = "unSet",
+                    ["direction"] = 0,
+                    ["extraHold"] = 0,
+                    ["midr"] = false,
+                    ["MultiPlanet"] = "-1"
+                };
+
+                parsedChart.Add(temp);
+            }
+        }
+        JObject last = new JObject
+        {
+            ["angle"] = 0,
+            ["bpm"] = "unSet",
+            ["direction"] = 0,
+            ["extraHold"] = 0,
+            ["midr"] = false,
+            ["MultiPlanet"] = "-1"
+        };
+
+        parsedChart.Add(last);
+
+        double bpm = l.GetSetting<double>("bpm");
+        double pitch = l.GetSetting<int>("pitch") / 100.0;
+
+        // 处理事件数据
+        foreach (var eventValue in levelEvents)
+        {
+            JObject o = eventValue as JObject;
+            if (o != null)
+            {
+                int tile = (int)o["floor"];
+                string eventType = (string)o["eventType"];
+
+                JObject ob = parsedChart[tile] as JObject;
+                if (ob != null)
+                {
+                    switch (eventType)
+                    {
+                        case "SetSpeed":
+                            if ((string)o["speedType"] == "Multiplier")
+                            {
+                                bpm = (double)o["bpmMultiplier"] * bpm;
+                            }
+                            else if ((string)o["speedType"] == "Bpm")
+                            {
+                                bpm = (double)o["beatsPerMinute"] * pitch;
+                            }
+
+                            ob["bpm"] = bpm;
+                            break;
+
+                        case "Twirl":
+                            ob["direction"] = -1;
+                            break;
+
+                        case "Pause":
+                            ob["extraHold"] = (double)o["duration"] / 2.0;
+                            break;
+
+                        case "Hold":
+                            ob["extraHold"] = (double)o["duration"];
+                            break;
+
+                        case "MultiPlanet":
+                            ob["MultiPlanet"] = (string)o["planets"] == "ThreePlanets" ? "1" : "0";
+                            break;
+                    }
+                    parsedChart[tile] = ob;
+                }
+            }
+        }
+
+        double currentBPM = l.GetSetting<double>("bpm") * pitch;
+        int direction = 1;
+
+        // 应用全局设置
+        foreach (var t in parsedChart)
+        {
+            JObject ob = t as JObject;
+            if (ob != null)
+            {
+                // 方向处理
+                if ((int)ob["direction"] == -1)
+                {
+                    direction *= -1;
+                }
+
+                ob["direction"] = direction;
+
+                // BPM处理
+                if ((string)ob["bpm"] == "unSet")
+                {
+                    ob["bpm"] = currentBPM;
+                }
+                else
+                {
+                    currentBPM = (double)ob["bpm"];
+                }
+            }
+        }
+
+        List<double> noteTime = new List<double>();
+
+        double curAngle = 0;
+        double curTime = 0;
+        bool isMultiPlanet = false;
+
+        foreach (var chartValue in parsedChart)
+        {
+            JObject o = chartValue as JObject;
+            if (o != null)
+            {
+                curAngle = Fmod(curAngle - 180, 360);
+                double curBPM = (double)o["bpm"];
+                double destAngle = (double)o["angle"];
+
+                double pAngle = (Fmod(destAngle - curAngle, 360) <= 0.001 || Fmod(destAngle - curAngle, 360) >= 359.999)
+                    ? 360
+                    : Fmod((curAngle - destAngle) * (int)o["direction"], 360);
+
+                pAngle += (double)o["extraHold"] * 360;
+
+                // 三球处理逻辑
+                double angleTemp = pAngle;
+                if (isMultiPlanet)
+                {
+                    pAngle = pAngle > 60 ? pAngle - 60 : pAngle + 300;
+                }
+
+                string multiPlanet = (string)o["MultiPlanet"];
+                if (multiPlanet != "-1")
+                {
+                    isMultiPlanet = multiPlanet == "1";
+                    pAngle = isMultiPlanet
+                        ? (pAngle > 60 ? pAngle - 60 : pAngle + 300)
+                        : angleTemp;
+                }
+
+                // 计算时间
+                double deltaTime = (bool)o["midr"] ? 0 : AngleToTime(pAngle, curBPM);
+                curTime += deltaTime;
+
+                curAngle = destAngle;
+                noteTime.Add(curTime);
+            }
+        }
+        noteTimesCache = noteTime;
+        if (addOffset)
+        {
+            noteTimesCacheWithOffset = noteTime.Select(t => t + l.GetSetting<int>("offset")).ToList();
+        }
+        return noteTime;
+    }
+
+    /// <summary>
+    /// Gets all BPM changes throughout the level
+    /// 获取整个关卡中的所有BPM变化
+    /// </summary>
+    /// <param name="level">The level to analyze / 要分析的关卡</param>
+    /// <returns>List of speed values for each tile / 每个瓦片的速度值列表</returns>
+    public static List<double> GetAllSpeedChange(this Level level)
+    {
+        if (allSpeedChange.Count > 0) return allSpeedChange;
+        double[] speeds = new double[level.angleData.Count];
+        double speed = level.GetSetting<double>("bpm");
+        for (int i = 0; i < level.angles.Count; i++)
+        {
+            if (level.HasEvents(i,EventType.SetSpeed))
+            {
+                var a = level.GetEvents(i, EventType.SetSpeed);
+                foreach (var o in a)
+                {
+                    if (o["speedType"].ToObject<string>() == "Multiplier")
+                    {
+                        speed *= o["bpmMultiplier"].ToObject<double>();
+                    }
+                    else if (o["speedType"].ToObject<string>() == "Bpm")
+                    {
+                        speed = o["beatsPerMinute"].ToObject<double>();
+                    }
+                }
+            }
+            speeds[i] = speed;
+        }
+
+        allSpeedChange = speeds.ToList();
+        return speeds.ToList();
+    }
+    
+    /// <summary>
+    /// 生成滑音
+    /// Generate a glide
+    /// </summary>
+    /// <param name="level">关卡实例 / Level Instance</param>
+    /// <param name="startFloor">开始的砖块 / The starting floor</param>
+    /// <param name="startNote">开始的音调 / The starting pitch</param>
+    /// <param name="endNote">结束的音调 / The ending</param>
+    /// <param name="duration">时长(秒) / Duration (in seconds)</param>
+    public static void GenerateGlide(this Level level,int startFloor,Pitch startNote, Pitch endNote, double duration)
+    {
+        if (startFloor < 0 || startFloor >= level.angles.Count) throw new ArgumentOutOfRangeException($"{nameof(startFloor)}:{startFloor}");
+        double current = 0;
+        double endFrequency = PitchHelper.GetFrequency(endNote);
+        List<double> bpmList = new List<double>();
+        while (current < duration - 2 / endFrequency)
+        {
+            double currentPitch = PitchHelper.GetGlidePitch(startNote, endNote, current / duration);
+            current += 1 / currentPitch;
+            bpmList.Add(currentPitch / 60);
+        }
+        bpmList.Add(1 / (duration - current) / 60);
+
+        for (int i = 0; i < bpmList.Count; i++)
+        {
+            JObject eventInfo = new JObject();
+            eventInfo["beatsPerMinute"] = bpmList[i];
+            eventInfo["speedType"] = "Bpm";
+            level.AddEvent(startFloor + i, EventType.SetSpeed, eventInfo);
+        }
+        
+    }
+    /// <summary>
+    /// Calculates floating-point remainder (modulo operation)
+    /// 计算浮点余数（模运算）
+    /// </summary>
+    /// <param name="a">Dividend / 被除数</param>
+    /// <param name="b">Divisor / 除数</param>
+    /// <returns>Floating-point remainder / 浮点余数</returns>
+    private static double Fmod(double a, double b) => a - b * Math.Floor(a / b);
+
+    /// <summary>
+    /// Converts angle to time based on BPM
+    /// 根据BPM将角度转换为时间
+    /// </summary>
+    /// <param name="angle">The angle in degrees / 角度（度）</param>
+    /// <param name="bpm">Beats per minute / 每分钟节拍数</param>
+    /// <returns>Time in milliseconds / 以毫秒为单位的时间</returns>
+    private static double AngleToTime(double angle, double bpm)
+    {
+        return (angle / 180) * (60 / bpm) * 1000;
+    }
+}
