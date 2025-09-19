@@ -28,7 +28,7 @@ var level = new Level("path/to/level.adofai");
 
 // Get level settings / 获取关卡设置
 var bpm = level.GetSetting<double>("bpm");
-var artist = level.GetSetting<string>("arist");
+var artist = level.GetSetting<string>("artist");
 
 // Add events / 添加事件
 level.AddEvent(10, "Twirl");
