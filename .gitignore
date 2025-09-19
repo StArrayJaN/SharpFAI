@@ -2,7 +2,7 @@
 bin
 obj
 packages
-*.bat
+*.sh
 *.nupkg
 .idea
 .codebuddy

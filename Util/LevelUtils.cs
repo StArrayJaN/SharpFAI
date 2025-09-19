@@ -28,7 +28,7 @@ public static class LevelUtils
     {
         if (noteTimesCache.Count > 0 && !addOffset) return noteTimesCache;
         if (noteTimesCacheWithOffset.Count > 0 && addOffset) return noteTimesCacheWithOffset;
-        List<double> angleDataList = l.angles;
+        var angleDataList = l.angles;
         JArray levelEvents = l.actions;
         JArray parsedChart = new JArray();
 
@@ -208,6 +208,11 @@ public static class LevelUtils
             noteTimesCacheWithOffset = noteTime.Select(t => t + l.GetSetting<int>("offset")).ToList();
         }
         return noteTime;
+        double Fmod(double a, double b) => a - b * Math.Floor(a / b);
+        double AngleToTime(double angle, double bpm)
+        {
+            return (angle / 180) * (60 / bpm) * 1000;
+        }
     }
 
     /// <summary>
@@ -264,37 +269,102 @@ public static class LevelUtils
         {
             double currentPitch = PitchHelper.GetGlidePitch(startNote, endNote, current / duration);
             current += 1 / currentPitch;
-            bpmList.Add(currentPitch / 60);
+            bpmList.Add(currentPitch * 60);
         }
-        bpmList.Add(1 / (duration - current) / 60);
+        bpmList.Add(1 / (duration - current) * 60);
 
         for (int i = 0; i < bpmList.Count; i++)
         {
             JObject eventInfo = new JObject();
             eventInfo["beatsPerMinute"] = bpmList[i];
             eventInfo["speedType"] = "Bpm";
+            if (level.angles.Count-1 < i)
+            {
+                level.angleData.Add(0);
+            }
             level.AddEvent(startFloor + i, EventType.SetSpeed, eventInfo);
         }
-        
     }
-    /// <summary>
-    /// Calculates floating-point remainder (modulo operation)
-    /// 计算浮点余数（模运算）
-    /// </summary>
-    /// <param name="a">Dividend / 被除数</param>
-    /// <param name="b">Divisor / 除数</param>
-    /// <returns>Floating-point remainder / 浮点余数</returns>
-    private static double Fmod(double a, double b) => a - b * Math.Floor(a / b);
 
     /// <summary>
-    /// Converts angle to time based on BPM
-    /// 根据BPM将角度转换为时间
+    /// remove VFXs
+    /// 移除视觉效果
     /// </summary>
-    /// <param name="angle">The angle in degrees / 角度（度）</param>
-    /// <param name="bpm">Beats per minute / 每分钟节拍数</param>
-    /// <returns>Time in milliseconds / 以毫秒为单位的时间</returns>
-    private static double AngleToTime(double angle, double bpm)
+    /// <param name="level">关卡实例 / Level Instance</param>
+    /// <param name="includeDecorations">是否包含装饰 / Whether to include decorations</param>
+    /// <param name="includeTracks">是否包含砖块视觉效果 / Whether to include tracks</param> 
+    public static void RemoveVFXs(this Level level,bool includeDecorations = false,bool includeTracks = false)
     {
-        return (angle / 180) * (60 / bpm) * 1000;
+        List<EventType> vfxTypes =
+        [
+            EventType.SetFilter,
+            EventType.SetFilterAdvanced,
+            EventType.MoveCamera, 
+            EventType.Flash,
+            EventType.Bloom,
+            EventType.ScreenScroll,
+            EventType.ShakeScreen,
+            EventType.ScreenTile,
+            EventType.CustomBackground,
+            EventType.HallOfMirrors,
+            EventType.SetFrameRate
+        ];
+        EventType[] decorationTypes =
+        [
+            EventType.AddDecoration,
+            EventType.AddText,
+            EventType.AddObject,
+            EventType.AddParticle,
+        ];
+        if (includeDecorations)
+        {
+            vfxTypes.AddRange(
+            [
+                EventType.EmitParticle,
+                EventType.SetParticle,
+                EventType.SetObject,
+                EventType.SetText,
+                EventType.SetDefaultText,
+                EventType.MoveDecorations, 
+            ]);
+        }
+
+        if (includeTracks)
+        {
+            vfxTypes.AddRange([
+                EventType.MoveTrack,
+                EventType.RecolorTrack, 
+                EventType.ColorTrack, 
+                EventType.AnimateTrack
+            ]);
+        }
+        for (int i = 0; i < level.actions.Count; i++)
+        {
+            var action = level.actions[i];
+            foreach (var type in vfxTypes)
+            {
+                if (action["eventType"].ToObject<string>() == type.ToString())
+                {
+                    level.actions.RemoveAt(i);
+                    i--;
+                }
+            }
+        }
+
+        if (includeDecorations)
+        {
+            for (int i = 0; i < level.decorations.Count; i++)
+            {
+                var decoration = level.decorations[i];
+                foreach (var type in decorationTypes)
+                {
+                    if (decoration["eventType"].ToObject<string>() == type.ToString())
+                    {
+                        level.decorations.RemoveAt(i);
+                        i--;
+                    }
+                }
+            }
+        }
     }
 }

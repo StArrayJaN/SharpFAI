@@ -14,12 +14,46 @@ namespace SharpFAI
     /// </summary>
     public class Level
     {
-        public JObject root{ get; private set; }
-        public JObject settings{ get; private set; }
+        /// <summary>
+        /// JSON object representing level data
+        /// 表示关卡数据的JSON对象
+        /// </summary>
+        public JObject root{ get; }
+        
+        /// <summary>
+        /// JSON object representing level settings
+        /// 表示关卡设置的JSON对象
+        /// </summary>
+        public JObject settings{ get; }
+        
+        /// <summary>
+        /// JSON object representing the angle of level bricks
+        /// 表示关卡砖块角度的JSON对象
+        /// </summary>
         public JArray angleData{ get; private set; }
-        public JArray actions{ get; private set; }
-        public JArray decorations{ get; private set; }
-        public List<double> angles { get; private set; }
+        
+        /// <summary>
+        /// JSON array representing level actions
+        /// 表示所有关卡事件的JSON数组
+        /// </summary>
+        public JArray actions{ get; }
+        
+        /// <summary>
+        /// JSON array representing level decorations
+        /// 表示所有关卡装饰的JSON数组
+        /// </summary>
+        public JArray decorations{ get; }
+        
+        /// <summary>
+        /// Read only list representing the angle of level bricks
+        /// 表示关卡砖块角度的只读列表
+        /// </summary>
+        public IReadOnlyList<double> angles { get; private set; }
+        
+        /// <summary>
+        /// A string representing the path of the level file
+        /// 表示关卡文件路径的字符串
+        /// </summary>
         public readonly string pathToLevel;
         
         /// <summary>
@@ -53,19 +87,42 @@ namespace SharpFAI
         }
 
         /// <summary>
+        /// Creates a new level with default settings and saves it to the specified path
+        /// 使用默认设置创建一个新关卡并将其保存到指定路径
+        /// </summary>
+        /// <param name="savePath">Path to save the new level to / 保存新关卡的路径</param>
+        /// <returns>A new Level instance / 一个新的Level实例</returns>
+        public static Level CreateNewLevel(string savePath)
+        {
+            JObject root = new();
+            root["angleData"] = new JArray([0,0,0,0,0,0,0,0,0,0]);
+            root["settings"] = JObject.FromObject(new
+            {
+                version = 14,
+                author = "SharpFAI Created Level",
+                bpm = 100,
+                offset = 0,
+            });
+            root["actions"] = new JArray();
+            root["decorations"] = new JArray();
+            File.WriteAllText(savePath, JsonConvert.SerializeObject(root, Formatting.Indented));
+            return new(savePath);
+        }
+
+        /// <summary>
         /// Initializes angle data from path data when angleData is not present
         /// 当angleData不存在时从路径数据初始化角度数据
         /// </summary>
         private void InitAngleData()
         {
-            if (angles.Any()) return;
+            if (this.angles.Any()) return;
             List<TileAngle> tileAngles = root["pathData"]
                 .ToObject<string>()
                 .ToCharArray()
                 .Select(c => TileAngle.AngleCharMap[c])
                 .ToList() ?? new();
             double staticAngle = 0d;
-            angles = new();
+            List<double> angles = new();
 
             foreach (TileAngle angle in tileAngles) {
                 if (angle == TileAngle.NONE) {
@@ -75,6 +132,7 @@ namespace SharpFAI
                 staticAngle = angle.Relative ? generalizeAngle(staticAngle + 180 - angle.Angle) : angle.Angle;
                 angles.Add(staticAngle);
             }
+            this.angles = angles;
             root.Remove("pathData");
             angleData = JArray.FromObject(angles);
             root.Add("angleData", angleData);
@@ -118,6 +176,17 @@ namespace SharpFAI
         public bool HasSetting(string setting)
         {
             return settings.ContainsKey(setting);
+        }
+        
+        /// <summary>
+        /// Sets the song for the level
+        /// 设置关卡的曲目
+        /// </summary>
+        /// <param name="songPath">Path to the song file / 歌曲文件路径</param>
+        public void SetSong(string songPath)
+        {
+            PutSetting("songFilename",Path.GetFileName(songPath));
+            File.Copy(songPath, Path.Combine(Path.GetDirectoryName(this.pathToLevel), Path.GetFileName(songPath)), true);
         }
 
         /// <summary>

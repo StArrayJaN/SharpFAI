@@ -20,6 +20,10 @@ public enum Pitch
     C8, Cs8, D8, Ds8, E8, F8, Fs8, G8, Gs8, A8, As8, B8
 }
 
+/// <summary>
+/// 音调助手
+/// Tone helper
+/// </summary>
 public class PitchHelper
 {
     private static readonly Dictionary<Pitch, double> PitchFrequencies = new Dictionary<Pitch, double>
@@ -48,6 +52,11 @@ public class PitchHelper
         {"C8", Pitch.C8}, {"C#8", Pitch.Cs8}, {"D8", Pitch.D8}, {"D#8", Pitch.Ds8}, {"E8", Pitch.E8}, {"F8", Pitch.F8}, {"F#8", Pitch.Fs8}, {"G8", Pitch.G8}, {"G#8", Pitch.Gs8}, {"A8", Pitch.A8}, {"A#8", Pitch.As8}, {"B8", Pitch.B8}
     };
 
+    /// <summary>
+    /// 获取指定音符的频率
+    /// Get the frequency of the specified note
+    /// </summary>
+    /// <param name="pitch">音符 / Note</param>
     public static double GetFrequency(Pitch pitch)
     {
         return PitchFrequencies[pitch];
