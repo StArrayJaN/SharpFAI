@@ -6,7 +6,7 @@ using System.Reflection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace SharpFAI
+namespace SharpFAI.Serialization
 {
     /// <summary>
     /// Represents an ADOFAI level with parsing and manipulation capabilities
@@ -24,7 +24,7 @@ namespace SharpFAI
         /// JSON object representing level settings
         /// 表示关卡设置的JSON对象
         /// </summary>
-        public JObject settings{ get; }
+        private JObject settings{ get; }
         
         /// <summary>
         /// JSON object representing the angle of level bricks
@@ -54,21 +54,24 @@ namespace SharpFAI
         /// A string representing the path of the level file
         /// 表示关卡文件路径的字符串
         /// </summary>
-        public readonly string pathToLevel;
+        public string? pathToLevel;
         
         /// <summary>
         /// Initializes a new instance of the Level class by loading from a file path
         /// 通过从文件路径加载来初始化Level类的新实例
         /// </summary>
-        /// <param name="pathToLevel">Path to the ADOFAI level file / ADOFAI关卡文件的路径</param>
-        /// <exception cref="ArgumentNullException">Thrown when pathToLevel is null / 当pathToLevel为null时抛出</exception>
-        public Level(string pathToLevel)
+        /// <param name="levelInfo">Dictionary representing level information / 表示关卡信息的字典</param>
+        /// <param name="pathToLevel">Path to the level file / 关卡文件路径</param>
+        /// <exception cref="ArgumentNullException">Thrown when pathToLevel is null / 当levelInfo为null时抛出</exception>
+        public Level(Dictionary<string, object>? levelInfo = null, string? pathToLevel = null)
         {
-            this.pathToLevel = pathToLevel ?? throw new ArgumentNullException(nameof(pathToLevel));
-            string content = File.ReadAllText(pathToLevel);
+            if (levelInfo == null && pathToLevel != null)
+            {
+                levelInfo = SimpleJSON.DeserializeFile(pathToLevel);
+                this.pathToLevel = pathToLevel;
+            }
             root = JObject.Parse(
-                JsonConvert.SerializeObject(
-                    SimpleJSON.Deserialize(content)));
+                JsonConvert.SerializeObject(levelInfo));
             actions = root["actions"].ToObject<JArray>();
             if (root.ContainsKey("angleData"))
             {
@@ -92,21 +95,24 @@ namespace SharpFAI
         /// </summary>
         /// <param name="savePath">Path to save the new level to / 保存新关卡的路径</param>
         /// <returns>A new Level instance / 一个新的Level实例</returns>
-        public static Level CreateNewLevel(string savePath)
+        public static Level CreateNewLevel(string? savePath = null)
         {
             JObject root = new();
             root["angleData"] = new JArray([0,0,0,0,0,0,0,0,0,0]);
             root["settings"] = JObject.FromObject(new
             {
                 version = 14,
-                author = "SharpFAI Created Level",
+                author = "Created Level by SharpFAI",
                 bpm = 100,
                 offset = 0,
             });
             root["actions"] = new JArray();
             root["decorations"] = new JArray();
-            File.WriteAllText(savePath, JsonConvert.SerializeObject(root, Formatting.Indented));
-            return new(savePath);
+            if (savePath != null)
+            {
+                File.WriteAllText(savePath, root.ToString());
+            }
+            return new(JsonConvert.DeserializeObject<Dictionary<string,object>>(root.ToString()));
         }
 
         /// <summary>
@@ -364,13 +370,19 @@ namespace SharpFAI
         /// Saves the level to a file
         /// 将关卡保存到文件
         /// </summary>
-        /// <param name="newLevelName">The filename to save as (default: "level-modified.adofai") / 保存的文件名（默认："level-modified.adofai"）</param>
+        /// <param name="newLevelPath">The file path to save as / 保存的文件路径 </param>
         /// <param name="indent">Whether to format with indentation (default: true) / 是否使用缩进格式化（默认：true）</param>
-        public void Save(string newLevelName = "level-modified.adofai", bool indent = true)
+        public void Save(string newLevelPath = null, bool indent = true)
         {
-            string folder = Path.GetDirectoryName(pathToLevel);
-            string newPath = Path.Combine(folder, newLevelName);
-            File.WriteAllText(newPath, ToString(indent));
+            if (newLevelPath == null && pathToLevel != null)
+            {
+                newLevelPath = Path.Combine(Path.GetDirectoryName(pathToLevel),"level-modified.adofai");
+            } 
+            else if (newLevelPath == null && pathToLevel == null)
+            {
+                throw new ArgumentNullException(nameof(newLevelPath));
+            }
+            File.WriteAllText(newLevelPath, ToString(indent));
         }
 
         /// <summary>
@@ -424,6 +436,24 @@ namespace SharpFAI
                 }
             }
             return events;
+        }
+
+
+        /// <summary>
+        /// Deserializes level events into strongly-typed objects; optionally includes decorations when requested
+        /// 将关卡事件反序列化为强类型对象；可选按需包含装饰
+        /// </summary>
+        /// <param name="includeDecorations">Whether to also deserialize decorations / 是否同时反序列化装饰</param>
+        /// <returns>Read-only list of events in the same order as actions (and decorations if included); returns empty list when none / 只读的事件列表，顺序与 actions（以及包含时的 decorations）一致；若无事件返回空列表而非 null</returns>
+        public IReadOnlyList<BaseEvent> DeserializeEvents(bool includeDecorations = false)
+        {
+            List<BaseEvent> baseEvents = new();
+            baseEvents.AddRange(JsonConvert.DeserializeObject<BaseEvent[]>(actions.ToString(), EventJsonConverter.GetJsonSettings()));
+            if (includeDecorations && decorations != null)
+            {
+                baseEvents.AddRange(JsonConvert.DeserializeObject<BaseEvent[]>(decorations.ToString(), EventJsonConverter.GetJsonSettings()));
+            }
+            return baseEvents; 
         }
     }
  

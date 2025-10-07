@@ -1,4 +1,4 @@
-namespace SharpFAI;
+namespace SharpFAI.Serialization;
 
 public enum EventType
 {

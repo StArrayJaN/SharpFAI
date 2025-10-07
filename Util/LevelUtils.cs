@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using Newtonsoft.Json.Linq;
+using SharpFAI.Serialization;
 
 namespace SharpFAI.Util;
 
@@ -21,15 +22,15 @@ public static class LevelUtils
     /// Calculates note timing for each tile in the level
     /// 计算关卡中每个瓦片的音符时间
     /// </summary>
-    /// <param name="l">The level to calculate note times for / 要计算音符时间的关卡</param>
+    /// <param name="level">The level to calculate note times for / 要计算音符时间的关卡</param>
     /// <param name="addOffset">Whether to add the level settings offset to the times (default: false) / 是否将关卡设置中的偏移添加到时间中（默认：false）</param>
     /// <returns>List of note times in milliseconds / 以毫秒为单位的音符时间列表</returns>
-    public static List<double> GetNoteTimes(this Level l, bool addOffset = false)
+    public static List<double> GetNoteTimes(this Level level, bool addOffset = false)
     {
         if (noteTimesCache.Count > 0 && !addOffset) return noteTimesCache;
         if (noteTimesCacheWithOffset.Count > 0 && addOffset) return noteTimesCacheWithOffset;
-        var angleDataList = l.angles;
-        JArray levelEvents = l.actions;
+        var angleDataList = level.angles;
+        JArray levelEvents = level.actions;
         JArray parsedChart = new JArray();
 
         // 初步处理轨道数据
@@ -77,8 +78,8 @@ public static class LevelUtils
 
         parsedChart.Add(last);
 
-        double bpm = l.GetSetting<double>("bpm");
-        double pitch = l.GetSetting<int>("pitch") / 100.0;
+        double bpm = level.GetSetting<double>("bpm");
+        double pitch = level.GetSetting<int>("pitch") / 100.0;
 
         // 处理事件数据
         foreach (var eventValue in levelEvents)
@@ -128,7 +129,7 @@ public static class LevelUtils
             }
         }
 
-        double currentBPM = l.GetSetting<double>("bpm") * pitch;
+        double currentBPM = level.GetSetting<double>("bpm") * pitch;
         int direction = 1;
 
         // 应用全局设置
@@ -205,7 +206,7 @@ public static class LevelUtils
         noteTimesCache = noteTime;
         if (addOffset)
         {
-            noteTimesCacheWithOffset = noteTime.Select(t => t + l.GetSetting<int>("offset")).ToList();
+            noteTimesCacheWithOffset = noteTime.Select(t => t + level.GetSetting<int>("offset")).ToList();
         }
         return noteTime;
         double Fmod(double a, double b) => a - b * Math.Floor(a / b);
@@ -293,7 +294,8 @@ public static class LevelUtils
     /// <param name="level">关卡实例 / Level Instance</param>
     /// <param name="includeDecorations">是否包含装饰 / Whether to include decorations</param>
     /// <param name="includeTracks">是否包含砖块视觉效果 / Whether to include tracks</param> 
-    public static void RemoveVFXs(this Level level,bool includeDecorations = false,bool includeTracks = false)
+    /// <param name="onDelete">删除时的回调（传递被删除项的JSON字符串）；可为 null / Callback invoked on deletion (receives deleted item's JSON string); can be null</param>
+    public static void RemoveVFXs(this Level level,bool includeDecorations = false,bool includeTracks = false,Action<string> onDelete = null)
     {
         List<EventType> vfxTypes =
         [
@@ -346,7 +348,9 @@ public static class LevelUtils
                 if (action["eventType"].ToObject<string>() == type.ToString())
                 {
                     level.actions.RemoveAt(i);
+                    onDelete?.Invoke(action.ToString());
                     i--;
+                    break;
                 }
             }
         }
@@ -360,8 +364,10 @@ public static class LevelUtils
                 {
                     if (decoration["eventType"].ToObject<string>() == type.ToString())
                     {
+                        onDelete?.Invoke(decoration.ToString());
                         level.decorations.RemoveAt(i);
                         i--;
+                        break;
                     }
                 }
             }

@@ -1,6 +1,10 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
 using Newtonsoft.Json.Linq;
+using SharpFAI.Serialization;
 using SharpFAI.Util;
 
 namespace SharpFAI.Test;
@@ -9,8 +13,12 @@ public class Test
 {
         public static void Main2()
         {
-            Level level = Level.CreateNewLevel("D:\\test.adofai");
-            level.GenerateGlide(1,Pitch.C2,Pitch.A4,10);
-            level.Save();
+            Level level2 = new Level(pathToLevel: @"D:\ADOFAILevels\Arche\Arche\level.adofai");
+
+            var events = level2.DeserializeEvents();
+            /*foreach (var event1 in events)
+            {
+                Console.WriteLine(event1);
+            }*/
         }
 }

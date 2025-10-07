@@ -447,13 +447,19 @@ namespace SharpFAI
 			}
 		}
 
-		public static object Deserialize(string json)
+		public static Dictionary<string,object> Deserialize(string json)
 		{
 			if (json == null)
 			{
 				return null;
 			}
-			return Parser.Parse(json);
+			return Parser.Parse(json) as Dictionary<string,object>;
+		}
+		
+		public static Dictionary<string,object> DeserializeFile(string path)
+		{
+			if (path == null) throw new ArgumentNullException(nameof(path));
+			return Parser.Parse(File.ReadAllText(path)) as Dictionary<string,object>;
 		}
 
 		public static object DeserializePartially(string json, string upToSection)
