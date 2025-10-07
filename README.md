@@ -21,23 +21,25 @@ dotnet add package SharpFAI
 ## Usage / 使用方法
 
 ```csharp
-using SharpFAI;
+using SharpFAI.Serialization;
 
-// Load a level / 加载关卡
-var level = new Level("path/to/level.adofai");
+var level = new Level(pathToLevel:"path/to/level.adofai");
 
 // Get level settings / 获取关卡设置
 var bpm = level.GetSetting<double>("bpm");
 var artist = level.GetSetting<string>("artist");
 
 // Add events / 添加事件
-level.AddEvent(10, "Twirl");
+level.AddEvent(10, EventType.Twirl);
 
 // Calculate note times / 计算音符时间
 var noteTimes = level.GetNoteTimes();
 
 // Save modified level / 保存修改后的关卡
 level.Save("modified-level.adofai");
+
+var level2 = Level.CreateNewLevel();
+level2.Save("new-level.adofai");
 ```
 
 ## API Documentation / API文档

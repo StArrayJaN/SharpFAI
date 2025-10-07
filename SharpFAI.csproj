@@ -36,15 +36,10 @@
 
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="\" />
-    <None Remove="Test\**" />
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="Test\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Remove="Test\**" />
+    <Compile Include="Test\Test.cs" />
   </ItemGroup>
 
 </Project>
