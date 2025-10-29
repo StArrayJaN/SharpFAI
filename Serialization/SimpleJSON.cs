@@ -170,7 +170,7 @@ namespace SharpFAI
 
 			private List<object> ParseArray()
 			{
-				List<object> list = new List<object>();
+				List<object> list = [];
 				json.Read();
 				bool flag = true;
 				while (flag)

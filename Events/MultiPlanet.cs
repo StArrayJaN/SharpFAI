@@ -10,7 +10,7 @@ public class MultiPlanet : BaseEvent
     /// Number of planets
     /// </summary>
     [JsonProperty("planets")]
-    public EventEnums.PlanetCount Planets { get; set; }
+    public EventEnums.PlanetCount Planets;
     
     public MultiPlanet(EventEnums.PlanetCount planets = EventEnums.PlanetCount.TwoPlanets)
     {

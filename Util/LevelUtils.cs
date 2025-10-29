@@ -14,9 +14,9 @@ namespace SharpFAI.Util;
 /// </summary>
 public static class LevelUtils
 {
-    private static List<double> noteTimesCache = new List<double>();
-    private static List<double> noteTimesCacheWithOffset = new List<double>();
-    private static List<double> allSpeedChange = new List<double>();
+    private static List<double> noteTimesCache = [];
+    private static List<double> noteTimesCacheWithOffset = [];
+    private static List<double> allSpeedChange = [];
     
     /// <summary>
     /// Calculates note timing for each tile in the level
@@ -31,7 +31,7 @@ public static class LevelUtils
         if (noteTimesCacheWithOffset.Count > 0 && addOffset) return noteTimesCacheWithOffset;
         var angleDataList = level.angles;
         JArray levelEvents = level.actions;
-        JArray parsedChart = new JArray();
+        JArray parsedChart = [];
 
         // 初步处理轨道数据
         for (int i = 0; i < angleDataList.Count; i++)
@@ -158,7 +158,7 @@ public static class LevelUtils
             }
         }
 
-        List<double> noteTime = new List<double>();
+        List<double> noteTime = [];
 
         double curAngle = 0;
         double curTime = 0;
@@ -265,7 +265,7 @@ public static class LevelUtils
         if (startFloor < 0 || startFloor >= level.angles.Count) throw new ArgumentOutOfRangeException($"{nameof(startFloor)}:{startFloor}");
         double current = 0;
         double endFrequency = PitchHelper.GetFrequency(endNote);
-        List<double> bpmList = new List<double>();
+        List<double> bpmList = [];
         while (current < duration - 2 / endFrequency)
         {
             double currentPitch = PitchHelper.GetGlidePitch(startNote, endNote, current / duration);
@@ -373,4 +373,45 @@ public static class LevelUtils
             }
         }
     }
+    /// <summary>
+    /// Add a cube decorations with depth effect to the level. / 向关卡添加一个具有深度效果的立方体装饰。
+    /// </summary>
+    /// <param name="level">The level to add the cube to. / 要添加立方体的关卡。</param>
+    /// <param name="cubeImage">The image path or name of the cube texture. / 立方体纹理的图像路径或名称。</param>
+    /// <param name="position">The initial position (x, y) of the cube. / 立方体的初始位置(x,y)。</param>
+    /// <param name="size">The initial size (width, height) of the cube. / 立方体的初始大小(宽度,高度)。</param>
+    /// <param name="floorCount">The number of depth layers to create. Default is 100. / 要创建的深度层数。默认值为100。</param>
+    /// <param name="floor">The floor number (default: 0) / 砖块（默认：0）</param>
+    /// <param name="tag">The decoration tag (default: empty) / 装饰标签（默认：空）</param>
+    /// <param name="relativeToScreen">Whether relative to screen or tile (default: false) / 是否相对于屏幕或瓦片（默认：false）</param>
+
+    /// <remarks>
+    /// This method creates a parallax effect by generating multiple layers of the same cube,
+    /// each with different scale and parallax values based on their depth. 
+    /// 此方法通过生成同一立方体的多个层来创建视差效果，
+    /// 每层根据其深度具有不同的缩放和视差值。
+    /// </remarks>
+    public static void AddCube(this Level level, string cubeImage, Tuple<float, float> position,
+        Tuple<float, float> size, int floorCount = 100,int floor = 0,string tag = "",bool relativeToScreen = false)
+    {
+        for (int i = 0; i < floorCount; i++)
+        {
+            float depthRatio = (float)i / (floorCount - 1);
+            float parallaxValue = 100 * depthRatio;
+            float scaleMultiplier = 1.0f - (depthRatio * 0.5f); // 最远处缩小到50%
+            float scaledWidth = size.Item1 * scaleMultiplier;
+            float scaledHeight = size.Item2 * scaleMultiplier;
+            JObject data = new JObject
+            {
+                ["decorationImage"] = cubeImage,
+                ["position"] = new JArray(position.Item1, position.Item2),
+                ["scale"] = new JArray(scaledWidth, scaledHeight),
+                ["parallax"] = new JArray(parallaxValue, parallaxValue), // 水平和垂直使用相同的平行值
+                ["depth"] = i, // 设置深度，确保正确的渲染顺序
+                ["syncFloorDepth"] = false
+            };
+            level.AddDecoration(floor,tag: tag,relativeToScreen:relativeToScreen,data: data);
+        }
+    }
+    
 }

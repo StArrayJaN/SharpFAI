@@ -6,29 +6,61 @@ namespace SharpFAI.Events;
 
 public class PositionTrack : BaseEvent
 {
+    /// <summary>
+    /// 位置偏移 [x, y]
+    /// Position offset [x, y]
+    /// </summary>
     [JsonProperty("positionOffset")]
-    public float[] PositionOffset { get; set; }
+    public float[] PositionOffset;
     
+    /// <summary>
+    /// 相对于 [轨道索引, 瓦片参考类型]
+    /// Relative to [track index, tile reference type]
+    /// </summary>
     [JsonProperty("relativeTo")]
-    public object[] RelativeTo { get; set; }
+    public object[] RelativeTo;
     
+    /// <summary>
+    /// 旋转角度
+    /// Rotation angle
+    /// </summary>
     [JsonProperty("rotation")]
-    public float Rotation { get; set; }
+    public float Rotation;
     
+    /// <summary>
+    /// 缩放百分比
+    /// Scale percentage
+    /// </summary>
     [JsonProperty("scale")]
-    public float Scale { get; set; }
+    public float Scale;
     
+    /// <summary>
+    /// 不透明度百分比
+    /// Opacity percentage
+    /// </summary>
     [JsonProperty("opacity")]
-    public float Opacity { get; set; }
+    public float Opacity;
     
+    /// <summary>
+    /// 仅此瓦片
+    /// Just this tile
+    /// </summary>
     [JsonProperty("justThisTile")]
-    public bool JustThisTile { get; set; }
+    public bool JustThisTile;
     
+    /// <summary>
+    /// 仅编辑器可见
+    /// Editor only
+    /// </summary>
     [JsonProperty("editorOnly")]
-    public bool EditorOnly { get; set; }
+    public bool EditorOnly;
     
+    /// <summary>
+    /// 粘附到地板
+    /// Stick to floors
+    /// </summary>
     [JsonProperty("stickToFloors")]
-    public bool StickToFloors { get; set; }
+    public bool StickToFloors;
     
     public PositionTrack(float[] positionOffset = null,
         object[] relativeTo = null,
@@ -40,8 +72,8 @@ public class PositionTrack : BaseEvent
         bool stickToFloors = true)
     {
         EventType = EventType.PositionTrack;
-        PositionOffset = positionOffset ?? new float[] { 0, 0 };
-        RelativeTo = relativeTo ?? new object[] { 0, "ThisTile" };
+        PositionOffset = positionOffset ?? [0, 0];
+        RelativeTo = relativeTo ?? [0, "ThisTile"];
         Rotation = rotation;
         Scale = scale;
         Opacity = opacity;
@@ -53,7 +85,7 @@ public class PositionTrack : BaseEvent
     // 辅助方法来设置 relativeTo 的值
     public void SetRelativeTo(int track, EventEnums.TileRelativeTo type)
     {
-        RelativeTo = new object[] { track, type.ToString() };
+        RelativeTo = [track, type.ToString()];
     }
     
     // 辅助方法来获取 track 索引

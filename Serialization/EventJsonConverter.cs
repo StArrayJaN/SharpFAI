@@ -22,6 +22,7 @@ public class EventJsonConverter : JsonConverter<BaseEvent>
         { "Bookmark", typeof(Bookmark) },
         { "PositionTrack", typeof(PositionTrack) },
         { "Hold", typeof(Hold) },
+        { "MoveCamera", typeof(MoveCamera) },
         { "Unknown", typeof(Unknown) }
     };
 
@@ -48,6 +49,18 @@ public class EventJsonConverter : JsonConverter<BaseEvent>
             throw new JsonSerializationException("Missing 'eventType' property in JSON");
 
         var eventTypeString = eventTypeToken.ToString();
+        /*if (jsonObject.ContainsKey("position"))
+        {
+            JArray position = (JArray)jsonObject["position"];
+            for (int i = 0; i < position.Count; i++)
+            {
+                if (position[i].ToString() == "null")
+                {
+                    position[i] = JToken.FromObject("0");
+                }
+            }
+            jsonObject["position"] = position;
+        }*/
         
         // 根据事件类型创建相应的实例
         if (!EventTypeMap.TryGetValue(eventTypeString, out var targetType))
@@ -59,7 +72,7 @@ public class EventJsonConverter : JsonConverter<BaseEvent>
         // 使用默认序列化器反序列化到具体类型
         var settings = new JsonSerializerSettings();
         // 枚举序列化为名字，不允许整数形式
-        StringEnumConverter stringEnumConverter = new() { AllowIntegerValues = false };
+        StringEnumConverter stringEnumConverter = new();
         settings.Converters.Add(stringEnumConverter);
         
         var eventInstance = (BaseEvent)jsonObject.ToObject(targetType, JsonSerializer.Create(settings));
@@ -91,11 +104,9 @@ public class EventJsonConverter : JsonConverter<BaseEvent>
     {
         return new JsonSerializerSettings
         {
-            Formatting = Formatting.Indented,
             NullValueHandling = NullValueHandling.Include,
             DefaultValueHandling = DefaultValueHandling.Include,
-            // 枚举序列化为名字，不允许整数形式
-            Converters = { new EventJsonConverter(), new StringEnumConverter { AllowIntegerValues = false } }
+            Converters = { new EventJsonConverter(), new StringEnumConverter() }
         };
     }
 }

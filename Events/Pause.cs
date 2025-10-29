@@ -6,26 +6,25 @@ namespace SharpFAI.Events;
 public class Pause : BaseEvent
 {
     /// <summary>
-    /// 暂停时长（秒）
+    /// 暂停时长
     /// Pause duration in seconds
     /// </summary>
     [JsonProperty("duration")]
-    public float Duration { get; set; }
+    public float Duration;
     
     /// <summary>
     /// 倒计时刻度
     /// Countdown ticks
     /// </summary>
     [JsonProperty("countdownTicks")]
-    public int CountdownTicks { get; set; }
+    public int CountdownTicks;
 
     /// <summary>
     /// 角度修正方向
     /// Angle correction direction
     /// </summary>
     [JsonProperty("angleCorrectionDir")]
-    public EventEnums.AngleCorrectionDirection AngleCorrectionDir { get; set; } =
-        EventEnums.AngleCorrectionDirection.Backward;
+    public EventEnums.AngleCorrectionDirection AngleCorrectionDir;
     
     public Pause(float duration = 1,
         int countdownTicks = 0, 

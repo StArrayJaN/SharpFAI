@@ -9,67 +9,60 @@ using Newtonsoft.Json.Linq;
 namespace SharpFAI.Serialization
 {
     /// <summary>
+    /// 表示一个 ADOFAI 关卡，具有解析和操作功能
     /// Represents an ADOFAI level with parsing and manipulation capabilities
-    /// 表示一个ADOFAI关卡，具有解析和操作功能
     /// </summary>
     public class Level
     {
         /// <summary>
+        /// 表示关卡数据的 JSON 对象
         /// JSON object representing level data
-        /// 表示关卡数据的JSON对象
         /// </summary>
         public JObject root{ get; }
         
         /// <summary>
+        /// 表示关卡设置的 JSON 对象
         /// JSON object representing level settings
-        /// 表示关卡设置的JSON对象
         /// </summary>
         private JObject settings{ get; }
         
         /// <summary>
-        /// JSON object representing the angle of level bricks
-        /// 表示关卡砖块角度的JSON对象
+        /// 表示关卡砖块角度的 JSON 数组
+        /// JSON array representing the angle of level tiles
         /// </summary>
         public JArray angleData{ get; private set; }
         
         /// <summary>
+        /// 表示所有关卡事件的 JSON 数组
         /// JSON array representing level actions
-        /// 表示所有关卡事件的JSON数组
         /// </summary>
         public JArray actions{ get; }
         
         /// <summary>
+        /// 表示所有关卡装饰的 JSON 数组
         /// JSON array representing level decorations
-        /// 表示所有关卡装饰的JSON数组
         /// </summary>
         public JArray decorations{ get; }
         
         /// <summary>
-        /// Read only list representing the angle of level bricks
         /// 表示关卡砖块角度的只读列表
+        /// Read-only list representing the angle of level tiles
         /// </summary>
         public IReadOnlyList<double> angles { get; private set; }
         
         /// <summary>
-        /// A string representing the path of the level file
         /// 表示关卡文件路径的字符串
+        /// Path to the level file
         /// </summary>
         public string? pathToLevel;
         
         /// <summary>
-        /// Initializes a new instance of the Level class by loading from a file path
-        /// 通过从文件路径加载来初始化Level类的新实例
+        /// 通过关卡信息字典初始化 Level 类的新实例
+        /// Initializes a new instance of the Level class from level information dictionary
         /// </summary>
-        /// <param name="levelInfo">Dictionary representing level information / 表示关卡信息的字典</param>
-        /// <param name="pathToLevel">Path to the level file / 关卡文件路径</param>
-        /// <exception cref="ArgumentNullException">Thrown when pathToLevel is null / 当levelInfo为null时抛出</exception>
-        public Level(Dictionary<string, object>? levelInfo = null, string? pathToLevel = null)
+        /// <param name="levelInfo">表示关卡信息的字典 / Dictionary representing level information</param>
+        public Level(Dictionary<string, object>? levelInfo)
         {
-            if (levelInfo == null && pathToLevel != null)
-            {
-                levelInfo = SimpleJSON.DeserializeFile(pathToLevel);
-                this.pathToLevel = pathToLevel;
-            }
             root = JObject.Parse(
                 JsonConvert.SerializeObject(levelInfo));
             actions = root["actions"].ToObject<JArray>();
@@ -90,11 +83,21 @@ namespace SharpFAI.Serialization
         }
 
         /// <summary>
-        /// Creates a new level with default settings and saves it to the specified path
-        /// 使用默认设置创建一个新关卡并将其保存到指定路径
+        /// 通过文件路径加载并初始化 Level 类的新实例
+        /// Initializes a new instance of the Level class by loading from a file path
         /// </summary>
-        /// <param name="savePath">Path to save the new level to / 保存新关卡的路径</param>
-        /// <returns>A new Level instance / 一个新的Level实例</returns>
+        /// <param name="pathToLevel">关卡文件路径 / Path to the level file</param>
+        public Level(string? pathToLevel) : this(SimpleJSON.DeserializeFile(pathToLevel))
+        {
+            this.pathToLevel = pathToLevel;
+        }
+
+        /// <summary>
+        /// 使用默认设置创建一个新关卡并可选保存到指定路径
+        /// Creates a new level with default settings and optionally saves it to the specified path
+        /// </summary>
+        /// <param name="savePath">保存新关卡的路径（可选）/ Path to save the new level to (optional)</param>
+        /// <returns>新的 Level 实例 / A new Level instance</returns>
         public static Level CreateNewLevel(string? savePath = null)
         {
             JObject root = new();
@@ -116,8 +119,8 @@ namespace SharpFAI.Serialization
         }
 
         /// <summary>
+        /// 当 angleData 不存在时从路径数据初始化角度数据
         /// Initializes angle data from path data when angleData is not present
-        /// 当angleData不存在时从路径数据初始化角度数据
         /// </summary>
         private void InitAngleData()
         {
@@ -126,9 +129,9 @@ namespace SharpFAI.Serialization
                 .ToObject<string>()
                 .ToCharArray()
                 .Select(c => TileAngle.AngleCharMap[c])
-                .ToList() ?? new();
+                .ToList() ?? [];
             double staticAngle = 0d;
-            List<double> angles = new();
+            List<double> angles = [];
 
             foreach (TileAngle angle in tileAngles) {
                 if (angle == TileAngle.NONE) {
@@ -150,45 +153,45 @@ namespace SharpFAI.Serialization
         }
 
         /// <summary>
-        /// Gets a setting value with the specified type
         /// 获取指定类型的设置值
+        /// Gets a setting value with the specified type
         /// </summary>
-        /// <typeparam name="T">The type to convert the setting to / 要转换设置的类型</typeparam>
-        /// <param name="setting">The setting name / 设置名称</param>
-        /// <returns>The setting value converted to type T / 转换为类型T的设置值</returns>
+        /// <typeparam name="T">要转换设置的类型 / The type to convert the setting to</typeparam>
+        /// <param name="setting">设置名称 / The setting name</param>
+        /// <returns>转换为类型 T 的设置值 / The setting value converted to type T</returns>
         public T GetSetting<T>(string setting)
         {
             return settings[setting].ToObject<T>();
         }
 
         /// <summary>
-        /// Sets a setting value with the specified type
         /// 设置指定类型的设置值
+        /// Sets a setting value with the specified type
         /// </summary>
-        /// <typeparam name="T">The type of the value to set / 要设置的值的类型</typeparam>
-        /// <param name="setting">The setting name / 设置名称</param>
-        /// <param name="value">The value to set / 要设置的值</param>
+        /// <typeparam name="T">要设置的值的类型 / The type of the value to set</typeparam>
+        /// <param name="setting">设置名称 / The setting name</param>
+        /// <param name="value">要设置的值 / The value to set</param>
         public void PutSetting<T>(string setting, T value)
         {
             settings[setting]= JToken.FromObject(value);
         }
 
         /// <summary>
-        /// Checks if a setting exists in the level
         /// 检查关卡中是否存在某个设置
+        /// Checks if a setting exists in the level
         /// </summary>
-        /// <param name="setting">The setting name to check / 要检查的设置名称</param>
-        /// <returns>True if the setting exists, false otherwise / 如果设置存在则返回true，否则返回false</returns>
+        /// <param name="setting">要检查的设置名称 / The setting name to check</param>
+        /// <returns>如果设置存在则返回 true，否则返回 false / True if the setting exists, false otherwise</returns>
         public bool HasSetting(string setting)
         {
             return settings.ContainsKey(setting);
         }
         
         /// <summary>
-        /// Sets the song for the level
         /// 设置关卡的曲目
+        /// Sets the song for the level
         /// </summary>
-        /// <param name="songPath">Path to the song file / 歌曲文件路径</param>
+        /// <param name="songPath">歌曲文件路径 / Path to the song file</param>
         public void SetSong(string songPath)
         {
             PutSetting("songFilename",Path.GetFileName(songPath));
@@ -196,12 +199,12 @@ namespace SharpFAI.Serialization
         }
 
         /// <summary>
+        /// 向指定地板添加事件
         /// Adds an event to the specified floor
-        /// 向指定楼层添加事件
         /// </summary>
-        /// <param name="floor">The floor number to add the event to / 要添加事件的砖块</param>
-        /// <param name="type">The event type / 事件类型</param>
-        /// <param name="data">Optional additional data for the event / 事件的可选附加数据</param>
+        /// <param name="floor">要添加事件的地板编号 / The floor number to add the event to</param>
+        /// <param name="type">事件类型 / The event type</param>
+        /// <param name="data">事件的可选附加数据 / Optional additional data for the event</param>
         public void AddEvent(int floor, EventType type, JObject data = null)
         {
             JObject newEvent = new JObject();
@@ -218,10 +221,21 @@ namespace SharpFAI.Serialization
         }
 
         /// <summary>
-        /// Removes multiple settings from the level
-        /// 从关卡中移除多个设置
+        /// 添加事件
+        /// Adds an event
         /// </summary>
-        /// <param name="settingsToRemove">Array of setting names to remove / 要移除的设置名称数组</param>
+        /// <param name="eventInfo">要添加的事件信息 / Event information to be added</param>
+        public void AddEvent(BaseEvent eventInfo)
+        {
+            JObject newEvent = JObject.Parse(eventInfo.ToString());
+            actions.Add(newEvent);
+        }
+        
+        /// <summary>
+        /// 从关卡中移除多个设置
+        /// Removes multiple settings from the level
+        /// </summary>
+        /// <param name="settingsToRemove">要移除的设置名称数组 / Array of setting names to remove</param>
         public void RemoveSettings(params string[] settingsToRemove)
         {
             foreach (string setting in settingsToRemove)
@@ -231,12 +245,12 @@ namespace SharpFAI.Serialization
         }
 
         /// <summary>
+        /// 获取指定地板上特定类型的所有事件
         /// Gets all events of a specific type on a specific floor
-        /// 获取指定楼层上特定类型的所有事件
         /// </summary>
-        /// <param name="floor">The floor number / 砖块</param>
-        /// <param name="type">The event type / 事件类型</param>
-        /// <returns>List of events matching the criteria / 符合条件的事件列表</returns>
+        /// <param name="floor">地板编号 / The floor number</param>
+        /// <param name="type">事件类型 / The event type</param>
+        /// <returns>符合条件的事件列表 / List of events matching the criteria</returns>
         public List<JObject> GetEvents(int floor, EventType type)
         {
             var events = new List<JObject>();
@@ -251,11 +265,11 @@ namespace SharpFAI.Serialization
         }
 
         /// <summary>
+        /// 获取指定地板上的所有事件
         /// Gets all events on a specific floor
-        /// 获取指定楼层上的所有事件
         /// </summary>
-        /// <param name="floor">The floor number / 砖块</param>
-        /// <returns>List of all events on the floor / 该楼层上所有事件的列表</returns>
+        /// <param name="floor">地板编号 / The floor number</param>
+        /// <returns>该地板上所有事件的列表 / List of all events on the floor</returns>
         public List<JObject> GetFloorEvents(int floor)
         {
             var events = new List<JObject>();
@@ -270,35 +284,35 @@ namespace SharpFAI.Serialization
         }
 
         /// <summary>
+        /// 检查地板是否有任何事件
         /// Checks if a floor has any events
-        /// 检查楼层是否有任何事件
         /// </summary>
-        /// <param name="floor">The floor number to check / 要检查的砖块</param>
-        /// <returns>True if the floor has events, false otherwise / 如果楼层有事件则返回true，否则返回false</returns>
+        /// <param name="floor">要检查的地板编号 / The floor number to check</param>
+        /// <returns>如果地板有事件则返回 true，否则返回 false / True if the floor has events, false otherwise</returns>
         public bool HasEvents(int floor)
         {
             return GetFloorEvents(floor).Any();
         }
 
         /// <summary>
+        /// 检查地板是否有特定类型的事件
         /// Checks if a floor has events of a specific type
-        /// 检查楼层是否有特定类型的事件
         /// </summary>
-        /// <param name="floor">The floor number to check / 要检查的砖块</param>
-        /// <param name="type">The event type to check for / 要检查的事件类型</param>
-        /// <returns>True if the floor has events of the specified type, false otherwise / 如果楼层有指定类型的事件则返回true，否则返回false</returns>
+        /// <param name="floor">要检查的地板编号 / The floor number to check</param>
+        /// <param name="type">要检查的事件类型 / The event type to check for</param>
+        /// <returns>如果地板有指定类型的事件则返回 true，否则返回 false / True if the floor has events of the specified type, false otherwise</returns>
         public bool HasEvents(int floor, EventType type)
         {
             return GetEvents(floor, type).Any();
         }
 
         /// <summary>
+        /// 从地板中移除特定类型的事件
         /// Removes events of a specific type from a floor
-        /// 从楼层中移除特定类型的事件
         /// </summary>
-        /// <param name="floor">The floor number / 砖块</param>
-        /// <param name="type">The event type to remove / 要移除的事件类型</param>
-        /// <param name="count">Number of events to remove (default: 1) / 要移除的事件数量（默认：1）</param>
+        /// <param name="floor">地板编号 / The floor number</param>
+        /// <param name="type">要移除的事件类型 / The event type to remove</param>
+        /// <param name="count">要移除的事件数量（默认：1）/ Number of events to remove (default: 1)</param>
         public void RemoveFloorEvents(int floor, EventType type, int count = 1)
         {
             int eventsRemoved = 0;
@@ -311,14 +325,14 @@ namespace SharpFAI.Serialization
         }
 
         /// <summary>
-        /// Adds text decoration to the level
         /// 向关卡添加文本装饰
+        /// Adds text decoration to the level
         /// </summary>
-        /// <param name="floor">The floor number (default: 0) / 砖块（默认：0）</param>
-        /// <param name="text">The text content (default: empty) / 文本内容（默认：空）</param>
-        /// <param name="tag">The decoration tag (default: empty) / 装饰标签（默认：空）</param>
-        /// <param name="relativeToScreen">Whether relative to screen or tile (default: false) / 是否相对于屏幕或瓦片（默认：false）</param>
-        /// <param name="data">Optional additional data / 可选的附加数据</param>
+        /// <param name="floor">地板编号（默认：0）/ The floor number (default: 0)</param>
+        /// <param name="text">文本内容（默认：空）/ The text content (default: empty)</param>
+        /// <param name="tag">装饰标签（默认：空）/ The decoration tag (default: empty)</param>
+        /// <param name="relativeToScreen">是否相对于屏幕或瓦片（默认：false）/ Whether relative to screen or tile (default: false)</param>
+        /// <param name="data">可选的附加数据 / Optional additional data</param>
         public void AddTextToDecorations(int floor = 0, string text = "", string tag = "",bool relativeToScreen = false, JObject data = null)
         {
             //example 
@@ -336,14 +350,14 @@ namespace SharpFAI.Serialization
         }
 
         /// <summary>
-        /// Adds an image decoration to the level
-        /// 向关卡添加图像装饰
+        /// 向关卡添加装饰
+        /// Adds a decoration to the level
         /// </summary>
-        /// <param name="floor">The floor number (default: 0) / 砖块（默认：0）</param>
-        /// <param name="type">The decoration type (default: "AddDecoration") / 装饰类型（默认："AddDecoration"）</param>
-        /// <param name="tag">The decoration tag (default: empty) / 装饰标签（默认：空）</param>
-        /// <param name="relativeToScreen">Whether relative to screen or tile (default: false) / 是否相对于屏幕或瓦片（默认：false）</param>
-        /// <param name="data">Optional additional data / 可选的附加数据</param>
+        /// <param name="floor">地板编号（默认：0）/ The floor number (default: 0)</param>
+        /// <param name="type">装饰类型（默认：AddDecoration）/ The decoration type (default: AddDecoration)</param>
+        /// <param name="tag">装饰标签（默认：空）/ The decoration tag (default: empty)</param>
+        /// <param name="relativeToScreen">是否相对于屏幕或瓦片（默认：false）/ Whether relative to screen or tile (default: false)</param>
+        /// <param name="data">可选的附加数据 / Optional additional data</param>
         public void AddDecoration(int floor = 0, EventType type = EventType.AddDecoration, string tag = "", bool relativeToScreen = false, JObject data = null)
         {
             JObject newDecoration = new JObject();
@@ -354,6 +368,8 @@ namespace SharpFAI.Serialization
             newDecoration["eventType"] = type.ToString();
             newDecoration["tag"] = tag;
             newDecoration["decorationImage"] = "";
+            newDecoration["relativeTo"] = relativeToScreen ? "Camera" : "Tile";
+            newDecoration["depth"] = -1;
             if (data != null)
             {
                 foreach (var kvpair in data)
@@ -361,8 +377,6 @@ namespace SharpFAI.Serialization
                     newDecoration[kvpair.Key] = kvpair.Value;
                 }
             }
-            newDecoration["relativeTo"] = relativeToScreen ? "Camera" : "Tile";
-            newDecoration["depth"] = -1;
             decorations.Add(newDecoration);
         }
 
@@ -391,7 +405,7 @@ namespace SharpFAI.Serialization
         /// </summary>
         /// <param name="indent">Whether to format with indentation (default: true) / 是否使用缩进格式化（默认：true）</param>
         /// <returns>JSON string representation of the level / 关卡的JSON字符串表示</returns>
-        private string ToString(bool indent = true)
+        public string ToString(bool indent = true)
         {
             root["actions"] = actions;
             root["angleData"] = angleData;
@@ -425,12 +439,12 @@ namespace SharpFAI.Serialization
         /// </summary>
         /// <param name="type">The event type to search for / 要搜索的事件类型</param>
         /// <returns>Array of events matching the specified type / 匹配指定类型的事件数组</returns>
-        public JArray GetEvents(string type)
+        public JArray GetEvents(EventType type)
         {
-            JArray events = new JArray();
+            JArray events = [];
             foreach (JObject action in actions)
             {
-                if (action["eventType"].Value<string>() == type)
+                if (action["eventType"].Value<EventType>() == type)
                 {
                     events.Add(action);
                 }
@@ -447,7 +461,7 @@ namespace SharpFAI.Serialization
         /// <returns>Read-only list of events in the same order as actions (and decorations if included); returns empty list when none / 只读的事件列表，顺序与 actions（以及包含时的 decorations）一致；若无事件返回空列表而非 null</returns>
         public IReadOnlyList<BaseEvent> DeserializeEvents(bool includeDecorations = false)
         {
-            List<BaseEvent> baseEvents = new();
+            List<BaseEvent> baseEvents = [];
             baseEvents.AddRange(JsonConvert.DeserializeObject<BaseEvent[]>(actions.ToString(), EventJsonConverter.GetJsonSettings()));
             if (includeDecorations && decorations != null)
             {

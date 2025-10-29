@@ -5,17 +5,33 @@ namespace SharpFAI.Events;
 
 public class SetSpeed : BaseEvent
 {
+    /// <summary>
+    /// 速度类型
+    /// Speed type
+    /// </summary>
     [JsonProperty("speedType")]
-    public EventEnums.SpeedType SpeedType { get; set; }
+    public EventEnums.SpeedType SpeedType;
     
+    /// <summary>
+    /// 每分钟节拍数
+    /// Beats per minute
+    /// </summary>
     [JsonProperty("beatsPerMinute")]
-    public float BeatsPerMinute { get; set; }
+    public float BeatsPerMinute;
     
+    /// <summary>
+    /// BPM 倍率
+    /// BPM multiplier
+    /// </summary>
     [JsonProperty("bpmMultiplier")]
-    public float BpmMultiplier { get; set; }
+    public float BpmMultiplier;
     
+    /// <summary>
+    /// 角度偏移
+    /// Angle offset
+    /// </summary>
     [JsonProperty("angleOffset")]
-    public float AngleOffset { get; set; }
+    public float AngleOffset;
     
     public SetSpeed(EventEnums.SpeedType speedType = EventEnums.SpeedType.Bpm,
         float beatsPerMinute = 100,
