@@ -1,7 +1,6 @@
 using System;
-using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Text;
 using Newtonsoft.Json;
@@ -13,12 +12,27 @@ internal static class MoreMethods
 {
     public static double AngleToTime(this double angle, double bpm)
     {
-        return (angle / 180) * (60 / bpm) * 1000;
+        return angle / 180 * (60 / bpm) * 1000;
     }
 
     public static double BPMToSecond(this double bpm)
     {
         return 60 / bpm;
+    }
+
+    public static float Fmod(this float x, float y)
+    {
+        return x >= 0 ? x % y : x % y + y;
+    }
+    
+    public static double Fmod(this double x, double y)
+    {
+        return x >= 0 ? x % y : x % y + y;
+    }
+
+    public static float ToFloat(this double x)
+    {
+        return (float)x;
     }
 
     public static string[] FindLevelFiles(this string dir)
@@ -49,7 +63,15 @@ internal static class MoreMethods
         {
             try
             {
-                sb.AppendLine("\t" + field.Name + ": " + field.GetValue(obj));
+                var value = field.GetValue(obj);
+                if (value is Array)
+                {
+                    sb.AppendLine("\t" + field.Name + ": " + value + " Count: " + ((Array)value).Length);
+                }
+                else
+                {
+                    sb.AppendLine("\t" + field.Name + ": " + value);
+                }
             }
             catch (Exception e)
             {
@@ -61,7 +83,15 @@ internal static class MoreMethods
         {
             try
             {
-                sb.AppendLine("\t" + property.Name + ": " + property.GetValue(obj));
+                var value = property.GetValue(obj);
+                if (value is Array)
+                {
+                    sb.AppendLine("\t" + property.Name + ": " + value + " Count: " + ((Array)value).Length);
+                }
+                else
+                {
+                    sb.AppendLine("\t" + property.Name + ": " + value);
+                }
             }
             catch (Exception e)
             {
@@ -75,6 +105,21 @@ internal static class MoreMethods
         }
         sb.AppendLine("]");
         return sb.ToString();
+    }
+
+    public static string AsString(this Array objects)
+    {
+        StringBuilder sb = new StringBuilder();
+        foreach (object obj in objects)
+        {
+            sb.AppendLine(obj.AsString());
+        }
+        return sb.ToString();
+    }
+
+    public static float ToRGBA(this Color color)
+    {
+        return (color.A << 24) | (color.R << 16) | (color.G << 8) | color.B;
     }
 
     public static string FormatJSON(this string s)

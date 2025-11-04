@@ -438,7 +438,7 @@ namespace SharpFAI
 			{
 				if (value is float || value is int || value is uint || value is long || value is double || value is sbyte || value is byte || value is short || value is ushort || value is ulong || value is decimal)
 				{
-					builder.Append(value.ToString());
+					builder.Append(value);
 				}
 				else
 				{

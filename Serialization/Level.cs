@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -129,7 +130,7 @@ namespace SharpFAI.Serialization
                 .ToObject<string>()
                 .ToCharArray()
                 .Select(c => TileAngle.AngleCharMap[c])
-                .ToList() ?? [];
+                .ToList();
             double staticAngle = 0d;
             List<double> angles = [];
 
@@ -195,7 +196,7 @@ namespace SharpFAI.Serialization
         public void SetSong(string songPath)
         {
             PutSetting("songFilename",Path.GetFileName(songPath));
-            File.Copy(songPath, Path.Combine(Path.GetDirectoryName(this.pathToLevel), Path.GetFileName(songPath)), true);
+            File.Copy(songPath, Path.Combine(Path.GetDirectoryName(pathToLevel), Path.GetFileName(songPath)), true);
         }
 
         /// <summary>
@@ -444,7 +445,7 @@ namespace SharpFAI.Serialization
             JArray events = [];
             foreach (JObject action in actions)
             {
-                if (action["eventType"].Value<EventType>() == type)
+                if (action["eventType"].Value<string>() == type.ToString())
                 {
                     events.Add(action);
                 }
@@ -459,7 +460,7 @@ namespace SharpFAI.Serialization
         /// </summary>
         /// <param name="includeDecorations">Whether to also deserialize decorations / 是否同时反序列化装饰</param>
         /// <returns>Read-only list of events in the same order as actions (and decorations if included); returns empty list when none / 只读的事件列表，顺序与 actions（以及包含时的 decorations）一致；若无事件返回空列表而非 null</returns>
-        public IReadOnlyList<BaseEvent> DeserializeEvents(bool includeDecorations = false)
+        public ReadOnlyCollection<BaseEvent> DeserializeEvents(bool includeDecorations = false)
         {
             List<BaseEvent> baseEvents = [];
             baseEvents.AddRange(JsonConvert.DeserializeObject<BaseEvent[]>(actions.ToString(), EventJsonConverter.GetJsonSettings()));
@@ -467,7 +468,21 @@ namespace SharpFAI.Serialization
             {
                 baseEvents.AddRange(JsonConvert.DeserializeObject<BaseEvent[]>(decorations.ToString(), EventJsonConverter.GetJsonSettings()));
             }
-            return baseEvents; 
+            return baseEvents.AsReadOnly(); 
+        }
+
+        /// <summary>
+        /// 获取音频绝对路径
+        /// Get audio absolute path
+        /// </summary>
+        /// <returns>Absolute path to audio file / 音频文件的绝对路径</returns>
+        public string GetAudioPath()
+        {
+            if (string.IsNullOrEmpty(settings["songFilename"].ToObject<string>()))
+            {
+                throw new FileNotFoundException("Audio file not found");
+            }
+            return Path.Combine(Path.GetDirectoryName(pathToLevel), settings["songFilename"].Value<string>());
         }
     }
  

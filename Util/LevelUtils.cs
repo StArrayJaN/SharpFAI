@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Text;
+using System.Numerics;
 using Newtonsoft.Json.Linq;
+using SharpFAI.Events;
+using SharpFAI.Framework;
 using SharpFAI.Serialization;
 
 namespace SharpFAI.Util;
@@ -173,7 +174,7 @@ public static class LevelUtils
                 double curBPM = (double)o["bpm"];
                 double destAngle = (double)o["angle"];
 
-                double pAngle = (Fmod(destAngle - curAngle, 360) <= 0.001 || Fmod(destAngle - curAngle, 360) >= 359.999)
+                double pAngle = Fmod(destAngle - curAngle, 360) <= 0.001 || Fmod(destAngle - curAngle, 360) >= 359.999
                     ? 360
                     : Fmod((curAngle - destAngle) * (int)o["direction"], 360);
 
@@ -191,7 +192,7 @@ public static class LevelUtils
                 {
                     isMultiPlanet = multiPlanet == "1";
                     pAngle = isMultiPlanet
-                        ? (pAngle > 60 ? pAngle - 60 : pAngle + 300)
+                        ? pAngle > 60 ? pAngle - 60 : pAngle + 300
                         : angleTemp;
                 }
 
@@ -212,7 +213,7 @@ public static class LevelUtils
         double Fmod(double a, double b) => a - b * Math.Floor(a / b);
         double AngleToTime(double angle, double bpm)
         {
-            return (angle / 180) * (60 / bpm) * 1000;
+            return angle / 180 * (60 / bpm) * 1000;
         }
     }
 
@@ -265,19 +266,19 @@ public static class LevelUtils
         if (startFloor < 0 || startFloor >= level.angles.Count) throw new ArgumentOutOfRangeException($"{nameof(startFloor)}:{startFloor}");
         double current = 0;
         double endFrequency = PitchHelper.GetFrequency(endNote);
-        List<double> bpmList = [];
+        List<double> noteTimes = [];
         while (current < duration - 2 / endFrequency)
         {
             double currentPitch = PitchHelper.GetGlidePitch(startNote, endNote, current / duration);
             current += 1 / currentPitch;
-            bpmList.Add(currentPitch * 60);
+            noteTimes.Add(currentPitch * 60);
         }
-        bpmList.Add(1 / (duration - current) * 60);
+        noteTimes.Add(1 / (duration - current) * 60);
 
-        for (int i = 0; i < bpmList.Count; i++)
+        for (int i = 0; i < noteTimes.Count; i++)
         {
             JObject eventInfo = new JObject();
-            eventInfo["beatsPerMinute"] = bpmList[i];
+            eventInfo["beatsPerMinute"] = noteTimes[i];
             eventInfo["speedType"] = "Bpm";
             if (level.angles.Count-1 < i)
             {
@@ -398,7 +399,7 @@ public static class LevelUtils
         {
             float depthRatio = (float)i / (floorCount - 1);
             float parallaxValue = 100 * depthRatio;
-            float scaleMultiplier = 1.0f - (depthRatio * 0.5f); // 最远处缩小到50%
+            float scaleMultiplier = 1.0f - depthRatio * 0.5f; // 最远处缩小到50%
             float scaledWidth = size.Item1 * scaleMultiplier;
             float scaledHeight = size.Item2 * scaleMultiplier;
             JObject data = new JObject
@@ -413,5 +414,103 @@ public static class LevelUtils
             level.AddDecoration(floor,tag: tag,relativeToScreen:relativeToScreen,data: data);
         }
     }
-    
+
+    public static List<Floor> CreateFloors(this Level level,Vector2 startPosition = default, bool usePositionTrack = false)
+    {
+        List<Floor> floors = new List<Floor>();
+        var angles = level.angles.ToList();
+        var noteTimes = level.GetNoteTimes();
+        double[] anglesArray = angles.ToArray();
+        List<bool> midSpins = new();
+        for (int i = 0; i < anglesArray.Length; i++) {
+            midSpins.Add(anglesArray[i].Equals(999));
+            if (anglesArray[i].Equals(999)) {
+                anglesArray[i] = anglesArray[i - 1] + 180;
+            }
+        }
+        // 事件预处理：为每个floor预先记录SetSpeed和Twirl事件
+        int n = anglesArray.Length + 1;
+        double[] SetSpeedBpm = new Double[n];
+        double[] SetSpeedMultiplier = new Double[n];
+        bool[] SetSpeedIsMultiplier = new Boolean[n];
+        for (int i = 0; i < n; i++) {
+            SetSpeedBpm[i] = 0;
+            SetSpeedMultiplier[i] = 0;
+            SetSpeedIsMultiplier[i] = false;
+        }
+        Vector2 startPos = new Vector2(startPosition.X, startPosition.Y);
+        List<BaseEvent> allEvents = level.DeserializeEvents().ToList();
+        List<PositionTrack> positionTracks = allEvents.Where(e => e is PositionTrack).Cast<PositionTrack>().ToList();
+        for (int a = 0; a < allEvents.Count; a++) {
+            BaseEvent eventObj = allEvents[a];
+            int floor = eventObj.Floor;
+            if (eventObj is SetSpeed setSpeed) {
+                if (setSpeed.SpeedType == EventEnums.SpeedType.Multiplier)
+                {
+                    SetSpeedMultiplier[floor] = setSpeed.BpmMultiplier;
+                    SetSpeedIsMultiplier[floor] = true;
+                } else
+                {
+                    SetSpeedBpm[floor] = setSpeed.BeatsPerMinute;
+                    SetSpeedIsMultiplier[floor] = false;
+                }
+            }
+        }
+        // 1. 并行批量创建Floor及其Mesh
+        Floor[] tileArr = new Floor[n];
+        Vector2[] posArr = new Vector2[n];
+        float[] angle1Arr = new float[n];
+        float[] angle2Arr = new float[n];
+        for (int i = 0; i < n; i++) {
+            float angle1 = (i == anglesArray.Length) ? (float)anglesArray[i - 1] : (float)anglesArray[i];
+            float angle2 = (i == 0) ? 0 : (float)anglesArray[i - 1];
+            // 先判断当前floor是否有PositionTrack，若有则修正startPos
+            if (usePositionTrack)
+            {
+                foreach (var positionTrack in positionTracks)
+                {
+                    if (positionTrack.Floor == i && !positionTrack.EditorOnly) {
+                        Vector2 position = new Vector2(positionTrack.PositionOffset[0], positionTrack.PositionOffset[1]);
+                        startPos += new Vector2(position.X * Floor.length * 2, position.Y * Floor.length * 2);
+                    }
+                }
+            }
+            posArr[i] = new(startPos.X, startPos.Y);
+            angle1Arr[i] = angle1;
+            angle2Arr[i] = angle2;
+            Vector2 step = new Vector2(Floor.length * 2 * MathF.Cos(angle1,true), Floor.length * 2 * MathF.Sin(angle1,true));
+            startPos += (step);
+            Floor tile = new Floor(angle1Arr[i], angle2Arr[i] - 180, posArr[i]);
+            if (i == angles.Count) {
+                tile.isMidspin =(false);
+            } else {
+                tile.isMidspin =(midSpins[i]);
+            }
+            tile.angle = i == anglesArray.Length ? (float)anglesArray[i - 1] + 180 : (float)anglesArray[i];
+            tileArr[i] = tile;
+        }
+        double bpm = level.GetSetting<double>("bpm");
+        bool isCW = true;
+        for (int i = 0; i < tileArr.Length; i++) 
+        {
+            Floor tile = tileArr[i];
+
+            if (SetSpeedIsMultiplier[i]) {
+                bpm *= SetSpeedMultiplier[i];
+            } else {
+                bpm = SetSpeedBpm[i];
+            }
+            
+            tile.bpm = (float) bpm;
+            tile.isCW = isCW;
+            if (i < tileArr.Length - 1) {
+                tile.nextFloor = tileArr[i + 1];
+            }
+            if (i > 0) {
+                tile.lastFloor = tileArr[i - 1];
+            }
+            floors.Add(tile);
+        }
+        return floors;
+    }
 }

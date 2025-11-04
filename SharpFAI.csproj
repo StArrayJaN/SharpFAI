@@ -36,5 +36,14 @@
 
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Remove="GLTest\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="GLTest\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Remove="GLTest\**" />
   </ItemGroup>
 </Project>
