@@ -124,6 +124,10 @@ public static class LevelUtils
                         case "MultiPlanet":
                             ob["MultiPlanet"] = (string)o["planets"] == "ThreePlanets" ? "1" : "0";
                             break;
+                        
+                        case "FreeRoam":
+                            ob["extraHold"] = (o["duration"].Value<double>() - 1) / 2.0;
+                            break;
                     }
                     parsedChart[tile] = ob;
                 }
@@ -375,20 +379,19 @@ public static class LevelUtils
         }
     }
     /// <summary>
-    /// Add a cube decorations with depth effect to the level. / 向关卡添加一个具有深度效果的立方体装饰。
+    /// Add a cube decorations with depth effect to the level / 向关卡添加一个具有深度效果的立方体装饰
     /// </summary>
-    /// <param name="level">The level to add the cube to. / 要添加立方体的关卡。</param>
-    /// <param name="cubeImage">The image path or name of the cube texture. / 立方体纹理的图像路径或名称。</param>
-    /// <param name="position">The initial position (x, y) of the cube. / 立方体的初始位置(x,y)。</param>
-    /// <param name="size">The initial size (width, height) of the cube. / 立方体的初始大小(宽度,高度)。</param>
-    /// <param name="floorCount">The number of depth layers to create. Default is 100. / 要创建的深度层数。默认值为100。</param>
-    /// <param name="floor">The floor number (default: 0) / 砖块（默认：0）</param>
+    /// <param name="level">The level to add the cube to / 要添加立方体的关卡</param>
+    /// <param name="cubeImage">The image path or name of the cube texture / 立方体纹理的图像路径或名称</param>
+    /// <param name="position">The initial position (x, y) of the cube / 立方体的初始位置(x,y)</param>
+    /// <param name="size">The initial size (width, height) of the cube / 立方体的初始大小(宽度,高度)</param>
+    /// <param name="floorCount">The number of depth layers to create (default: 100) / 要创建的深度层数（默认：100）</param>
+    /// <param name="floor">The floor number (default: 0) / 地板编号（默认：0）</param>
     /// <param name="tag">The decoration tag (default: empty) / 装饰标签（默认：空）</param>
     /// <param name="relativeToScreen">Whether relative to screen or tile (default: false) / 是否相对于屏幕或瓦片（默认：false）</param>
-
     /// <remarks>
     /// This method creates a parallax effect by generating multiple layers of the same cube,
-    /// each with different scale and parallax values based on their depth. 
+    /// each with different scale and parallax values based on their depth.
     /// 此方法通过生成同一立方体的多个层来创建视差效果，
     /// 每层根据其深度具有不同的缩放和视差值。
     /// </remarks>
@@ -415,6 +418,20 @@ public static class LevelUtils
         }
     }
 
+    /// <summary>
+    /// Creates Floor objects from the level's angle data with positions and properties
+    /// 从关卡的角度数据创建Floor对象，包含位置和属性
+    /// </summary>
+    /// <param name="level">The level to create floors from / 要创建地板的关卡</param>
+    /// <param name="startPosition">Starting position for the first floor (default: Vector2.Zero) / 第一个地板的起始位置（默认：Vector2.Zero）</param>
+    /// <param name="usePositionTrack">Whether to apply PositionTrack events to floor positions / 是否将PositionTrack事件应用于地板位置</param>
+    /// <returns>List of Floor objects representing the level's path / 表示关卡路径的Floor对象列表</returns>
+    /// <remarks>
+    /// This method processes the level's angle data, events (SetSpeed, PositionTrack),
+    /// and generates Floor instances with correct positions, angles, BPM, and mesh data.
+    /// 此方法处理关卡的角度数据、事件（SetSpeed、PositionTrack），
+    /// 并生成具有正确位置、角度、BPM和网格数据的Floor实例。
+    /// </remarks>
     public static List<Floor> CreateFloors(this Level level,Vector2 startPosition = default, bool usePositionTrack = false)
     {
         List<Floor> floors = new List<Floor>();
