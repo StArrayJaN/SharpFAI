@@ -1,10 +1,13 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Drawing;
 using System.IO;
 using System.Reflection;
 using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SharpFAI.Serialization;
 
 namespace SharpFAI.Util;
 
@@ -20,15 +23,7 @@ internal static class MoreMethods
         return 60 / bpm;
     }
 
-    public static float Fmod(this float x, float y)
-    {
-        return x >= 0 ? x % y : x % y + y;
-    }
     
-    public static double Fmod(this double x, double y)
-    {
-        return x >= 0 ? x % y : x % y + y;
-    }
 
     public static float ToFloat(this double x)
     {

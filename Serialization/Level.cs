@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SharpFAI.Util;
 
 namespace SharpFAI.Serialization
 {
@@ -139,7 +140,7 @@ namespace SharpFAI.Serialization
                     angles.Add(angle.Angle);
                     continue;
                 }
-                staticAngle = angle.Relative ? generalizeAngle(staticAngle + 180 - angle.Angle) : angle.Angle;
+                staticAngle = angle.Relative ? MathF.GeneralizeAngle(staticAngle + 180 - angle.Angle) : angle.Angle;
                 angles.Add(staticAngle);
             }
             this.angles = angles;
@@ -147,10 +148,7 @@ namespace SharpFAI.Serialization
             angleData = JArray.FromObject(angles);
             root.Add("angleData", angleData);
             
-            double generalizeAngle(double angle) {
-                angle -= (int) (angle / 360) * 360;
-                return angle < 0 ? angle + 360 : angle;
-            }
+            
         }
 
         /// <summary>
@@ -271,9 +269,9 @@ namespace SharpFAI.Serialization
         /// </summary>
         /// <param name="floor">地板编号 / The floor number</param>
         /// <returns>该地板上所有事件的列表 / List of all events on the floor</returns>
-        public List<JObject> GetFloorEvents(int floor)
+        public JArray GetFloorEvents(int floor)
         {
-            var events = new List<JObject>();
+            var events = new JArray();
             foreach (JObject action in actions)
             {
                 if (action["floor"].Value<int>() == floor)
@@ -336,7 +334,6 @@ namespace SharpFAI.Serialization
         /// <param name="data">可选的附加数据 / Optional additional data</param>
         public void AddTextToDecorations(int floor = 0, string text = "", string tag = "",bool relativeToScreen = false, JObject data = null)
         {
-            //example 
             JObject newText = new JObject();
             newText["decText"] = text;
             newText["font"] = "Default";
@@ -387,7 +384,7 @@ namespace SharpFAI.Serialization
         /// </summary>
         /// <param name="newLevelPath">The file path to save as / 保存的文件路径 </param>
         /// <param name="indent">Whether to format with indentation (default: true) / 是否使用缩进格式化（默认：true）</param>
-        public void Save(string newLevelPath = null, bool indent = true)
+        public void Save(string? newLevelPath = null, bool indent = true)
         {
             if (newLevelPath == null && pathToLevel != null)
             {

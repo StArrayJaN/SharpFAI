@@ -1,4 +1,5 @@
 using Newtonsoft.Json.Linq;
+using SharpFAI.Events;
 using SharpFAI.Serialization;
 
 namespace SharpFAI.Util;
@@ -22,9 +23,5 @@ public static class EventUtils
         data.Add("decText", text);
         data.Add("tag", tag);
         level.AddEvent(floor, EventType.SetText, data);
-    }
-    
-    public static void MoveCamera(this Level level, int floor, double duration, (double,double) posttion = default, string tag = ""){
-        
     }
 }

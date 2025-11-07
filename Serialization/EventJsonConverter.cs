@@ -109,4 +109,14 @@ public class EventJsonConverter : JsonConverter<BaseEvent>
             Converters = { new EventJsonConverter(), new StringEnumConverter() }
         };
     }
+
+    public static T? Deserialize<T>(string json)
+    {
+        return JsonConvert.DeserializeObject<T>(json, GetJsonSettings());
+    }
+
+    public static string Serialize<T>(T obj)
+    {
+        return JsonConvert.SerializeObject(obj, GetJsonSettings());
+    }
 }

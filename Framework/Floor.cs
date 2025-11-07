@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Linq;
 using System.Numerics;
 using System.Text;
+using SharpFAI.Serialization;
 using SharpFAI.Util;
 
 namespace SharpFAI.Framework;
@@ -27,7 +28,7 @@ public class Floor
     /// <summary>
     /// Outline thickness for the floor border / 地板边框的轮廓厚度
     /// </summary>
-    public float outline = 2f;
+    public const float outline = 2f;
     
     /// <summary>
     /// Entry angle of the floor in degrees / 地板的入口角度（度）
@@ -42,7 +43,7 @@ public class Floor
     /// <summary>
     /// Current angle of the floor / 地板的当前角度
     /// </summary>
-    public float angle;
+    public float angle = 0;
     
     /// <summary>
     /// Whether this is a midspin floor / 是否为中旋地板
@@ -52,7 +53,7 @@ public class Floor
     /// <summary>
     /// Whether the rotation is clockwise / 旋转是否为顺时针
     /// </summary>
-    public bool isCW;
+    public bool isCW = true;
 
     /// <summary>
     /// Reference to the previous floor / 对前一个地板的引用
@@ -67,12 +68,12 @@ public class Floor
     /// <summary>
     /// BPM (beats per minute) at this floor / 此地板处的BPM（每分钟节拍数）
     /// </summary>
-    public double bpm;
+    public double bpm = 0;
     
     /// <summary>
     /// Entry time of this floor in milliseconds / 此地板的入口时间（毫秒）
     /// </summary>
-    public double entryTime;
+    public double entryTime = 0;
 
     /// <summary>
     /// World position of the floor / 地板的世界坐标位置
@@ -82,7 +83,17 @@ public class Floor
     /// <summary>
     /// Cached polygon mesh data / 缓存的多边形网格数据
     /// </summary>
-    public Polygon floorPolygon;
+    private Polygon floorPolygon;
+
+    /// <summary>
+    /// List of events on this floor / 此地板上的事件列表
+    /// </summary>
+    public List<BaseEvent> events = [];
+    
+    /// <summary>
+    /// Index of this floor in the level / 此地板在关卡中的索引
+    /// </summary>
+    public int index = 0;
     
     /// <summary>
     /// Creates a new floor tile with specified angles and position
@@ -104,14 +115,14 @@ public class Floor
     /// 生成或返回此地板的缓存多边形网格
     /// </summary>
     /// <returns>Polygon mesh data containing vertices, triangles and colors / 包含顶点、三角形和颜色的多边形网格数据</returns>
-    public Polygon GeneratePolygons()
+    public Polygon GeneratePolygon()
     {
         if (!floorPolygon.IsEmpty()) return floorPolygon;
-        this.floorPolygon = isMidspin ? CreateMidspinPolygons(entryAngle.ToFloat()) : CreateFloorPolygons();
+        this.floorPolygon = isMidspin ? CreateMidspinPolygon(entryAngle.ToFloat()) : CreateFloorPolygon();
         return this.floorPolygon;
     }
     
-    private Polygon CreateFloorPolygons() 
+    private Polygon CreateFloorPolygon() 
     {
         float length = Floor.length;
         float width = Floor.width;
@@ -127,16 +138,16 @@ public class Floor
         float[] a = new float[2];
 
         if ((entryAngle - exitAngle).Fmod(360f) >= (exitAngle - entryAngle).Fmod(360f)) {
-            a[0] = entryAngle.Fmod(360f).ToFloat() * (float)MathF.PI / 180f;
-            a[1] = a[0] + (exitAngle - entryAngle).Fmod(360f).ToFloat() * (float)MathF.PI / 180f;
+            a[0] = entryAngle.Fmod(360f) * (float)MathF.PI / 180f;
+            a[1] = a[0] + (exitAngle - entryAngle).Fmod(360f) * (float)MathF.PI / 180f;
         } else {
-            a[0] = exitAngle.Fmod(360f).ToFloat() * (float)MathF.PI / 180f;
-            a[1] = a[0] + (entryAngle - exitAngle).Fmod(360f).ToFloat() * (float)MathF.PI / 180f;
+            a[0] = exitAngle.Fmod(360f)* (float)MathF.PI / 180f;
+            a[1] = a[0] + (entryAngle - exitAngle).Fmod(360f) * (float)MathF.PI / 180f;
         }
         float angle = a[1] - a[0];
         float mid = a[0] + angle / 2f;
         #endregion
-        if (angle < 2.0943952f && angle > 0) 
+        if (angle is < 2.0943952f and > 0) 
         {
             #region 角度小于2.0943952
             float x;
@@ -424,7 +435,7 @@ public class Floor
         return polygon;
     }
     
-    private Polygon CreateMidspinPolygons(float a1) {
+    private Polygon CreateMidspinPolygon(float a1) {
 
         float width = Floor.width;
         float length = Floor.width;

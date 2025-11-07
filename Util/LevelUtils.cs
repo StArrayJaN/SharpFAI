@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SharpFAI.Events;
 using SharpFAI.Framework;
@@ -445,15 +446,14 @@ public static class LevelUtils
                 anglesArray[i] = anglesArray[i - 1] + 180;
             }
         }
-        // 事件预处理：为每个floor预先记录SetSpeed和Twirl事件
         int n = anglesArray.Length + 1;
         double[] SetSpeedBpm = new Double[n];
         double[] SetSpeedMultiplier = new Double[n];
-        bool[] SetSpeedIsMultiplier = new Boolean[n];
+        bool[] setSpeedIsMultiplier = new Boolean[n];
         for (int i = 0; i < n; i++) {
             SetSpeedBpm[i] = 0;
             SetSpeedMultiplier[i] = 0;
-            SetSpeedIsMultiplier[i] = false;
+            setSpeedIsMultiplier[i] = false;
         }
         Vector2 startPos = new Vector2(startPosition.X, startPosition.Y);
         List<BaseEvent> allEvents = level.DeserializeEvents().ToList();
@@ -465,11 +465,11 @@ public static class LevelUtils
                 if (setSpeed.SpeedType == EventEnums.SpeedType.Multiplier)
                 {
                     SetSpeedMultiplier[floor] = setSpeed.BpmMultiplier;
-                    SetSpeedIsMultiplier[floor] = true;
+                    setSpeedIsMultiplier[floor] = true;
                 } else
                 {
                     SetSpeedBpm[floor] = setSpeed.BeatsPerMinute;
-                    SetSpeedIsMultiplier[floor] = false;
+                    setSpeedIsMultiplier[floor] = false;
                 }
             }
         }
@@ -511,21 +511,24 @@ public static class LevelUtils
         for (int i = 0; i < tileArr.Length; i++) 
         {
             Floor tile = tileArr[i];
-
-            if (SetSpeedIsMultiplier[i]) {
+            if (setSpeedIsMultiplier[i]) {
                 bpm *= SetSpeedMultiplier[i];
-            } else {
+            } 
+            else 
+            {
                 bpm = SetSpeedBpm[i];
             }
-            
-            tile.bpm = (float) bpm;
+            tile.bpm = bpm;
             tile.isCW = isCW;
+            tile.index = i;
             if (i < tileArr.Length - 1) {
                 tile.nextFloor = tileArr[i + 1];
             }
             if (i > 0) {
                 tile.lastFloor = tileArr[i - 1];
             }
+            tile.entryTime = noteTimes[i];
+            tile.events = EventJsonConverter.Deserialize<List<BaseEvent>>(level.GetFloorEvents(i).ToString());
             floors.Add(tile);
         }
         return floors;

@@ -12,24 +12,31 @@ using SharpFAI.Util;
 
 namespace SharpFAI.Test;
 #if DEBUG
-public class Test
+public static class Test
 {
     public static void Main2()
     {
-        Level level2 = new Level(pathToLevel: @"D:\ADOFAILevels\Scattered Faith\level.adofai");
-        Floor.length = 5;
-        Floor.width = 5 / 2f;
-        var floors = level2.CreateFloors();
-        var polygons = new List<Floor.Polygon>();
-        var positions = new List<Vector2>();
-        
-        foreach (var floor in floors.Take(2))
+        //捅死Yqloss喵
+        Level level2 = new Level(pathToLevel: @"D:\ADOFAILevels\level.adofai");
+        level2.AddSegmentsAsFloor(2.747474);
+        level2.Save();
+    }
+    public static void AddSegmentsAsFloor(this Level level, double multiplier = 2, int count = 32)
+    {
+        double angle = 180 - 180 / multiplier;
+        for (int i = 0; i < count; i++)
         {
-            Console.WriteLine(floor.GeneratePolygons());
+            level.angleData.Add(angle * i) ;
+            /*if (i % multiplier == 0)
+            {
+                level.actions.Add(new PositionTrack()
+                {
+                    Floor = lastFloor + i,
+                    PositionOffset = new float[] { i, 0 },
+                    EditorOnly = false
+                }.ToString());
+            }*/
         }
-        //RenderAndSave(polygons, positions.ToArray(),"D:\\test.png");
-        //Process.Start("D:\\test.png");
-
     }
 }
 #endif

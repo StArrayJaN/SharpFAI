@@ -8,7 +8,7 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     
     <!-- Version Configuration -->
-    <VersionPrefix>1.0.7</VersionPrefix>
+    <VersionPrefix>1.0.8</VersionPrefix>
     <Version>$(VersionPrefix)</Version>
     
     <!-- NuGet Package Configuration -->
