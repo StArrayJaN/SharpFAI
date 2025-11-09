@@ -14,12 +14,34 @@ namespace SharpFAI.Test;
 #if DEBUG
 public static class Test
 {
+    private static readonly double tickToNanoseconds = 1_000_000_000.0 / Stopwatch.Frequency;
     public static void Main2()
     {
         //捅死Yqloss喵
         Level level2 = new Level(pathToLevel: @"D:\ADOFAILevels\level.adofai");
-        level2.AddSegmentsAsFloor(2.747474);
-        level2.Save();
+        var _floors = level2.CreateFloors();
+        var _noteTimes = level2.GetNoteTimes();
+        _noteTimes.ForEach(Console.WriteLine);
+        int _currentIndex = 0;
+        int events = _currentIndex + 1;
+        double startTime = CurrentTimeMilliseconds() - _noteTimes[_currentIndex];
+        while (events < _floors.Count)
+        {
+            double currentTime = CurrentTimeMilliseconds();
+            double timeMilliseconds = currentTime - startTime + _noteTimes[_currentIndex];
+            while (events < _noteTimes.Count &&
+                   _noteTimes[events] <= timeMilliseconds)
+            {
+                Console.WriteLine($"{_noteTimes[events]} <= {timeMilliseconds}");
+                events++;
+            }
+        }
+    }
+    // 获取高精度毫秒数（double）
+    public static double CurrentTimeMilliseconds()
+    {
+        long ticks = Stopwatch.GetTimestamp();
+        return (double)ticks / Stopwatch.Frequency * 1000.0;
     }
     public static void AddSegmentsAsFloor(this Level level, double multiplier = 2, int count = 32)
     {

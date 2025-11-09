@@ -511,14 +511,18 @@ public static class LevelUtils
         for (int i = 0; i < tileArr.Length; i++) 
         {
             Floor tile = tileArr[i];
-            if (setSpeedIsMultiplier[i]) {
+            if (setSpeedIsMultiplier[i] && SetSpeedMultiplier[i] != 0) {
                 bpm *= SetSpeedMultiplier[i];
             } 
-            else 
+            else if (SetSpeedBpm[i] != 0)
             {
                 bpm = SetSpeedBpm[i];
             }
             tile.bpm = bpm;
+            if (level.HasEvents(i, EventType.Twirl))
+            {
+                isCW = !isCW;
+            }
             tile.isCW = isCW;
             tile.index = i;
             if (i < tileArr.Length - 1) {
@@ -528,6 +532,7 @@ public static class LevelUtils
                 tile.lastFloor = tileArr[i - 1];
             }
             tile.entryTime = noteTimes[i];
+            tile.renderOrder = -i;
             tile.events = EventJsonConverter.Deserialize<List<BaseEvent>>(level.GetFloorEvents(i).ToString());
             floors.Add(tile);
         }

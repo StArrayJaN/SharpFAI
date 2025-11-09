@@ -36,14 +36,17 @@
 
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="\" />
-    <None Remove="GLTest\**" />
+    <None Remove="SharpFAI-Player\**" />
+    <None Remove="GameSources\**" />
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="GLTest\**" />
+    <Compile Remove="SharpFAI-Player\**" />
+    <Compile Remove="GameSources\**" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Remove="GLTest\**" />
+    <EmbeddedResource Remove="SharpFAI-Player\**" />
+    <EmbeddedResource Remove="GameSources\**" />
   </ItemGroup>
 </Project>

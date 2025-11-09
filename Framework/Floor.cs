@@ -23,7 +23,7 @@ public class Floor
     /// <summary>
     /// Default width (half-width) of the floor tile / 地板瓦片的默认宽度（半宽）
     /// </summary>
-    public static float width = 50 / 2f;
+    public static float width = 30;
     
     /// <summary>
     /// Outline thickness for the floor border / 地板边框的轮廓厚度
@@ -53,7 +53,7 @@ public class Floor
     /// <summary>
     /// Whether the rotation is clockwise / 旋转是否为顺时针
     /// </summary>
-    public bool isCW = true;
+    public bool isCW = false;
 
     /// <summary>
     /// Reference to the previous floor / 对前一个地板的引用
@@ -94,6 +94,11 @@ public class Floor
     /// Index of this floor in the level / 此地板在关卡中的索引
     /// </summary>
     public int index = 0;
+
+    /// <summary>
+    /// Rendering order / 渲染顺序
+    /// </summary>
+    public int renderOrder = 0;
     
     /// <summary>
     /// Creates a new floor tile with specified angles and position
@@ -428,9 +433,9 @@ public class Floor
         
         Polygon polygon = new Polygon()
         {
-            vertice = vertices.ToArray(),
-            triangle = triangles.Select(x => (short) x).ToArray(),
-            color = colors.ToArray()
+            vertices = vertices.ToArray(),
+            triangles = triangles.Select(x => (short) x).ToArray(),
+            colors = colors.ToArray()
         };
         return polygon;
     }
@@ -497,9 +502,9 @@ public class Floor
      
         Polygon polygon = new Polygon()
         {
-            vertice = vertices.ToArray(),
-            triangle = triangles.Select(x => (short) x).ToArray(),
-            color = colors.ToArray()
+            vertices = vertices.ToArray(),
+            triangles = triangles.Select(x => (short) x).ToArray(),
+            colors = colors.ToArray()
         };
         return polygon;
     }
@@ -513,17 +518,17 @@ public class Floor
         /// <summary>
         /// Array of vertex positions (X, Y, Z) / 顶点位置数组（X, Y, Z）
         /// </summary>
-        public Vector3[] vertice;
+        public Vector3[] vertices;
         
         /// <summary>
         /// Array of vertex colors (RGBA) / 顶点颜色数组（RGBA）
         /// </summary>
-        public Color[] color;
+        public Color[] colors;
         
         /// <summary>
         /// Array of triangle indices (3 indices per triangle) / 三角形索引数组（每个三角形3个索引）
         /// </summary>
-        public short[] triangle;
+        public short[] triangles;
 
         /// <summary>
         /// Checks if the polygon is empty (no vertices, triangles or colors)
@@ -532,13 +537,14 @@ public class Floor
         /// <returns>True if empty, false otherwise / 如果为空返回true，否则返回false</returns>
         public bool IsEmpty()
         {
-            if (vertice != null && triangle != null && color != null)
+            if (vertices != null && triangles != null && colors != null)
             {
-                return vertice.Length == 0 && triangle.Length == 0 && color.Length == 0;
+                return vertices.Length == 0 && triangles.Length == 0 && colors.Length == 0;
             }
             return true;
         }
         
+        /*
         /// <summary>
         /// Returns a string representation of the polygon
         /// 返回多边形的字符串表示形式
@@ -546,7 +552,7 @@ public class Floor
         public override string ToString()
         {
             return this.AsString();
-        }
+        }*/
     }
 
     /// <summary>

@@ -4,7 +4,7 @@ namespace SharpFAI.Util;
 
 public static class MathF
 {
-    public const double PI = 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679;
+    public const float PI = 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679f;
     
     public static float Lerp(float a, float b, float t)
     {
@@ -14,7 +14,7 @@ public static class MathF
     public static float Cos(float a,bool degrees = false)
     {
         if (degrees)
-            a = a * PI.ToFloat() / 180;
+            a = a * PI / 180;
         return Math.Cos(a).ToFloat();
     }
     
@@ -28,7 +28,7 @@ public static class MathF
     public static float Sin(float a,bool degrees = false)
     {
         if (degrees)
-            a = a * PI.ToFloat() / 180;
+            a = a * PI / 180;
         return Math.Sin(a).ToFloat();
     }
     
@@ -64,5 +64,25 @@ public static class MathF
         float a = x.ToFloat();
         float b = y.ToFloat();
         return a >= 0 ? a % b : a % b + b;
+    }
+
+    public static float Sqrt(float a)
+    {
+        return Math.Sqrt(a).ToFloat();
+    }
+
+    public static float Sqrt(double a)
+    {
+        return Math.Sqrt(a).ToFloat();
+    }
+
+    public static float Min(double a, double b)
+    {
+        return Math.Min(a, b).ToFloat();
+    }
+
+    public static float Max(double a, double b)
+    {
+        return Math.Max(a, b).ToFloat();
     }
 }
