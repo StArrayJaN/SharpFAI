@@ -31,12 +31,6 @@ public interface ITexture
 	void Load(string path);
 	
 	/// <summary>
-	/// Load texture from bitmap / 从位图加载纹理
-	/// </summary>
-	/// <param name="bitmap">Bitmap instance / 位图对象</param>
-	void Load(Bitmap bitmap);
-	
-	/// <summary>
 	/// Update a sub-region of the texture with raw RGBA data
 	/// 使用原始RGBA数据更新纹理的子区域
 	/// </summary>
