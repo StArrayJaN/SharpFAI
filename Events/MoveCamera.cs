@@ -10,7 +10,7 @@ public class MoveCamera : BaseEvent
     /// Duration in seconds
     /// </summary>
     [JsonProperty("duration")]
-    public float Duration { get; set; }
+    public double Duration { get; set; }
     
     /// <summary>
     /// 相对于
@@ -31,21 +31,21 @@ public class MoveCamera : BaseEvent
     /// Rotation angle
     /// </summary>
     [JsonProperty("rotation")]
-    public float Rotation { get; set; }
+    public double Rotation { get; set; }
     
     /// <summary>
     /// 缩放百分比
     /// Zoom percentage
     /// </summary>
     [JsonProperty("zoom")]
-    public float Zoom { get; set; }
+    public double Zoom { get; set; }
     
     /// <summary>
     /// 角度偏移
     /// Angle offset
     /// </summary>
     [JsonProperty("angleOffset")]
-    public float AngleOffset { get; set; }
+    public double AngleOffset { get; set; }
     
     /// <summary>
     /// 缓动函数
@@ -62,12 +62,12 @@ public class MoveCamera : BaseEvent
     public string EventTag { get; set; }
 
     public MoveCamera(int floor = 0,
-        float duration = 0,
+        double duration = 0,
         EventEnums.CamMovementType relativeTo = EventEnums.CamMovementType.Player,
         object[] position = null, 
-        float rotation = 0,
-        float zoom = 100,
-        float angleOffset = 0,
+        double rotation = 0,
+        double zoom = 100,
+        double angleOffset = 0,
         EventEnums.Ease ease = EventEnums.Ease.Linear, 
         string eventTag = "")
     {

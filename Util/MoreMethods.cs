@@ -1,13 +1,10 @@
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Drawing;
 using System.IO;
 using System.Reflection;
 using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using SharpFAI.Serialization;
 
 namespace SharpFAI.Util;
 
@@ -22,9 +19,7 @@ internal static class MoreMethods
     {
         return 60 / bpm;
     }
-
     
-
     public static float ToFloat(this double x)
     {
         return (float)x;

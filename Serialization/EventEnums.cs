@@ -4,7 +4,7 @@ namespace SharpFAI.Serialization;
 /// 事件用到的枚举集合
 /// Enum collection used by events
 /// </summary>
-public class EventEnums
+public static class EventEnums
 {
     public enum PlanetCount
     {
@@ -76,5 +76,37 @@ public class EventEnums
         InOutFlash,
         INTERNAL_Zero,
         INTERNAL_Custom
+    }
+    
+    public enum HitSound
+    {
+        Hat,
+        Kick,
+        Shaker,
+        Sizzle,
+        Chuck,
+        ShakerLoud,
+        None,
+        Hammer,
+        KickChroma,
+        SnareAcoustic2,
+        Sidestick,
+        Stick,
+        ReverbClack,
+        Squareshot,
+        PowerDown,
+        PowerUp,
+        KickHouse,
+        KickRupture,
+        HatHouse,
+        SnareHouse,
+        SnareVapor,
+        ClapHit,
+        ClapHitEcho,
+        ReverbClap,
+        FireTile,
+        IceTile,
+        VehiclePositive,
+        VehicleNegative
     }
 }

@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SharpFAI.Events;
 using SharpFAI.Framework;
@@ -19,7 +18,16 @@ public static class LevelUtils
     private static List<double> noteTimesCache = [];
     private static List<double> noteTimesCacheWithOffset = [];
     private static List<double> allSpeedChange = [];
-    
+
+    private struct ParsedChart
+    {
+        public double angle;
+        public double bpm;
+        public int direction;
+        public double extraHold;
+        public bool midr;
+        public int multiPlanet;
+    }
     /// <summary>
     /// Calculates note timing for each tile in the level
     /// 计算关卡中每个瓦片的音符时间
@@ -32,8 +40,7 @@ public static class LevelUtils
         if (noteTimesCache.Count > 0 && !addOffset) return noteTimesCache;
         if (noteTimesCacheWithOffset.Count > 0 && addOffset) return noteTimesCacheWithOffset;
         var angleDataList = level.angles;
-        JArray levelEvents = level.actions;
-        JArray parsedChart = [];
+        List<ParsedChart> parsedChart = [];
 
         // 初步处理轨道数据
         for (int i = 0; i < angleDataList.Count; i++)
@@ -41,97 +48,92 @@ public static class LevelUtils
             double angleData = angleDataList[i];
             if (Math.Abs(angleData - 999) < 0.01)
             {
-                JObject temp = new JObject
+                parsedChart.Add(new()
                 {
-                    ["angle"] = Fmod(angleDataList[i - 1] + 180, 360),
-                    ["bpm"] = "unSet",
-                    ["direction"] = 0,
-                    ["extraHold"] = 0,
-                    ["midr"] = true,
-                    ["MultiPlanet"] = "-1"
-                };
-
-                parsedChart.Add(temp);
+                    angle = Fmod(angleDataList[i - 1] + 180, 360),
+                    bpm = -1,
+                    direction = 0,
+                    extraHold = 0,
+                    midr = true,
+                    multiPlanet = -1
+                });
             }
             else
             {
-                JObject temp = new JObject
+                parsedChart.Add(new()
                 {
-                    ["angle"] = Fmod(angleData, 360),
-                    ["bpm"] = "unSet",
-                    ["direction"] = 0,
-                    ["extraHold"] = 0,
-                    ["midr"] = false,
-                    ["MultiPlanet"] = "-1"
-                };
-
-                parsedChart.Add(temp);
+                    angle = Fmod(angleData, 360),
+                    bpm = -1,
+                    direction = 0,
+                    extraHold = 0,
+                    midr = false,
+                    multiPlanet = -1
+                });
             }
         }
-        JObject last = new JObject
-        {
-            ["angle"] = 0,
-            ["bpm"] = "unSet",
-            ["direction"] = 0,
-            ["extraHold"] = 0,
-            ["midr"] = false,
-            ["MultiPlanet"] = "-1"
-        };
 
-        parsedChart.Add(last);
+        // 添加最后一个标记点
+        parsedChart.Add(new()
+        {
+            angle = 0,
+            bpm = -1,
+            direction = 0,
+            extraHold = 0,
+            midr = false,
+            multiPlanet = -1
+        });
+
 
         double bpm = level.GetSetting<double>("bpm");
         double pitch = level.GetSetting<int>("pitch") / 100.0;
+        var levelEvents = level.DeserializeEvents();
 
         // 处理事件数据
         foreach (var eventValue in levelEvents)
         {
-            JObject o = eventValue as JObject;
+            var o = eventValue;
             if (o != null)
             {
-                int tile = (int)o["floor"];
-                string eventType = (string)o["eventType"];
+                int tile = o.Floor;
+                var eventType =o.EventType;
 
-                JObject ob = parsedChart[tile] as JObject;
-                if (ob != null)
+                var ob = parsedChart[tile];
+                switch (eventType)
                 {
-                    switch (eventType)
-                    {
-                        case "SetSpeed":
-                            if ((string)o["speedType"] == "Multiplier")
-                            {
-                                bpm = (double)o["bpmMultiplier"] * bpm;
-                            }
-                            else if ((string)o["speedType"] == "Bpm")
-                            {
-                                bpm = (double)o["beatsPerMinute"] * pitch;
-                            }
+                    case EventType.SetSpeed:
+                        var eventObj = eventValue.ToEvent<SetSpeed>();
+                        if (eventObj.SpeedType == EventEnums.SpeedType.Multiplier)
+                        {
+                            bpm = eventObj.BpmMultiplier * bpm;
+                        }
+                        else if (eventObj.SpeedType == EventEnums.SpeedType.Bpm)
+                        {
+                            bpm = eventObj.BeatsPerMinute * pitch;
+                        }
+                        ob.bpm = bpm;
+                        break;
 
-                            ob["bpm"] = bpm;
-                            break;
+                    case EventType.Twirl:
+                        ob.direction = -1;
+                        break;
 
-                        case "Twirl":
-                            ob["direction"] = -1;
-                            break;
+                    case EventType.Pause:
+                        ob.extraHold = eventValue.ToEvent<Pause>().Duration / 2.0;
+                        break;
 
-                        case "Pause":
-                            ob["extraHold"] = (double)o["duration"] / 2.0;
-                            break;
+                    case EventType.Hold:
+                        ob.extraHold = eventValue.ToEvent<Hold>().Duration;
+                        break;
 
-                        case "Hold":
-                            ob["extraHold"] = (double)o["duration"];
-                            break;
+                    case EventType.MultiPlanet:
+                        ob.multiPlanet = eventValue.ToEvent<MultiPlanet>().Planets == EventEnums.PlanetCount.ThreePlanets ? 1 : 0;
+                        break;
 
-                        case "MultiPlanet":
-                            ob["MultiPlanet"] = (string)o["planets"] == "ThreePlanets" ? "1" : "0";
-                            break;
-                        
-                        case "FreeRoam":
-                            ob["extraHold"] = (o["duration"].Value<double>() - 1) / 2.0;
-                            break;
-                    }
-                    parsedChart[tile] = ob;
+                    case EventType.FreeRoam:
+                        ob.extraHold = (eventValue.ToEvent<FreeRoam>().Duration - 1) / 2.0;
+                        break;
                 }
+                parsedChart[tile] = ob;
             }
         }
 
@@ -141,29 +143,26 @@ public static class LevelUtils
         // 应用全局设置
         foreach (var t in parsedChart)
         {
-            JObject ob = t as JObject;
-            if (ob != null)
+            var ob = t;
+            
+            // 方向处理
+            if (ob.direction == -1)
             {
-                // 方向处理
-                if ((int)ob["direction"] == -1)
-                {
-                    direction *= -1;
-                }
+                direction *= -1;
+            }
 
-                ob["direction"] = direction;
+            ob.direction = direction;
 
-                // BPM处理
-                if ((string)ob["bpm"] == "unSet")
-                {
-                    ob["bpm"] = currentBPM;
-                }
-                else
-                {
-                    currentBPM = (double)ob["bpm"];
-                }
+            // BPM处理
+            if (ob.bpm.Equals(-1))
+            {
+                ob.bpm = currentBPM;
+            }
+            else
+            {
+                currentBPM = ob.bpm;
             }
         }
-
         List<double> noteTime = [];
 
         double curAngle = 0;
@@ -172,42 +171,41 @@ public static class LevelUtils
 
         foreach (var chartValue in parsedChart)
         {
-            JObject o = chartValue as JObject;
-            if (o != null)
+            var o = chartValue;
+            
+            curAngle = Fmod(curAngle - 180, 360);
+            double curBPM = o.bpm;
+            double destAngle = o.angle;
+
+            double pAngle = Fmod(destAngle - curAngle, 360) <= 0.001 || Fmod(destAngle - curAngle, 360) >= 359.999
+                ? 360
+                : Fmod((curAngle - destAngle) * o.direction, 360);
+
+            pAngle += o.extraHold * 360;
+
+            // 三球处理逻辑
+            double angleTemp = pAngle;
+            if (isMultiPlanet)
             {
-                curAngle = Fmod(curAngle - 180, 360);
-                double curBPM = (double)o["bpm"];
-                double destAngle = (double)o["angle"];
-
-                double pAngle = Fmod(destAngle - curAngle, 360) <= 0.001 || Fmod(destAngle - curAngle, 360) >= 359.999
-                    ? 360
-                    : Fmod((curAngle - destAngle) * (int)o["direction"], 360);
-
-                pAngle += (double)o["extraHold"] * 360;
-
-                // 三球处理逻辑
-                double angleTemp = pAngle;
-                if (isMultiPlanet)
-                {
-                    pAngle = pAngle > 60 ? pAngle - 60 : pAngle + 300;
-                }
-
-                string multiPlanet = (string)o["MultiPlanet"];
-                if (multiPlanet != "-1")
-                {
-                    isMultiPlanet = multiPlanet == "1";
-                    pAngle = isMultiPlanet
-                        ? pAngle > 60 ? pAngle - 60 : pAngle + 300
-                        : angleTemp;
-                }
-
-                // 计算时间
-                double deltaTime = (bool)o["midr"] ? 0 : AngleToTime(pAngle, curBPM);
-                curTime += deltaTime;
-
-                curAngle = destAngle;
-                noteTime.Add(curTime);
+                pAngle = pAngle > 60 ? pAngle - 60 : pAngle + 300;
             }
+
+            int multiPlanet = o.multiPlanet;
+            if (multiPlanet != -1)
+            {
+                isMultiPlanet = multiPlanet == 1;
+                pAngle = isMultiPlanet
+                    ? pAngle > 60 ? pAngle - 60 : pAngle + 300
+                    : angleTemp;
+            }
+
+            // 计算时间
+            double deltaTime = o.midr ? 0 : AngleToTime(pAngle, curBPM);
+            curTime += deltaTime;
+
+            curAngle = destAngle;
+            noteTime.Add(curTime);
+            
         }
         noteTimesCache = noteTime;
         if (addOffset)
@@ -235,7 +233,7 @@ public static class LevelUtils
         double speed = level.GetSetting<double>("bpm");
         for (int i = 0; i < level.angles.Count; i++)
         {
-            if (level.HasEvents(i,EventType.SetSpeed))
+            if (level.HasEvents(i, EventType.SetSpeed))
             {
                 var a = level.GetEvents(i, EventType.SetSpeed);
                 foreach (var o in a)
@@ -256,7 +254,7 @@ public static class LevelUtils
         allSpeedChange = speeds.ToList();
         return speeds.ToList();
     }
-    
+
     /// <summary>
     /// 生成滑音
     /// Generate a glide
@@ -266,7 +264,7 @@ public static class LevelUtils
     /// <param name="startNote">开始的音调 / The starting pitch</param>
     /// <param name="endNote">结束的音调 / The ending</param>
     /// <param name="duration">时长(秒) / Duration (in seconds)</param>
-    public static void GenerateGlide(this Level level,int startFloor,Pitch startNote, Pitch endNote, double duration)
+    public static void GenerateGlide(this Level level, int startFloor, Pitch startNote, Pitch endNote, double duration)
     {
         if (startFloor < 0 || startFloor >= level.angles.Count) throw new ArgumentOutOfRangeException($"{nameof(startFloor)}:{startFloor}");
         double current = 0;
@@ -282,14 +280,16 @@ public static class LevelUtils
 
         for (int i = 0; i < noteTimes.Count; i++)
         {
-            JObject eventInfo = new JObject();
-            eventInfo["beatsPerMinute"] = noteTimes[i];
-            eventInfo["speedType"] = "Bpm";
-            if (level.angles.Count-1 < i)
+            if (level.angles.Count - 1 < i)
             {
                 level.angleData.Add(0);
             }
-            level.AddEvent(startFloor + i, EventType.SetSpeed, eventInfo);
+            level.AddEvent(new SetSpeed()
+            {
+                Floor = startFloor + i, 
+                BeatsPerMinute = noteTimes[i],
+                SpeedType = EventEnums.SpeedType.Bpm
+            });
         }
     }
 
@@ -301,13 +301,13 @@ public static class LevelUtils
     /// <param name="includeDecorations">是否包含装饰 / Whether to include decorations</param>
     /// <param name="includeTracks">是否包含砖块视觉效果 / Whether to include tracks</param> 
     /// <param name="onDelete">删除时的回调（传递被删除项的JSON字符串）；可为 null / Callback invoked on deletion (receives deleted item's JSON string); can be null</param>
-    public static void RemoveVFXs(this Level level,bool includeDecorations = false,bool includeTracks = false,Action<string> onDelete = null)
+    public static void RemoveVFXs(this Level level, bool includeDecorations = false, bool includeTracks = false, Action<string> onDelete = null)
     {
         List<EventType> vfxTypes =
         [
             EventType.SetFilter,
             EventType.SetFilterAdvanced,
-            EventType.MoveCamera, 
+            EventType.MoveCamera,
             EventType.Flash,
             EventType.Bloom,
             EventType.ScreenScroll,
@@ -333,7 +333,7 @@ public static class LevelUtils
                 EventType.SetObject,
                 EventType.SetText,
                 EventType.SetDefaultText,
-                EventType.MoveDecorations, 
+                EventType.MoveDecorations,
             ]);
         }
 
@@ -341,8 +341,8 @@ public static class LevelUtils
         {
             vfxTypes.AddRange([
                 EventType.MoveTrack,
-                EventType.RecolorTrack, 
-                EventType.ColorTrack, 
+                EventType.RecolorTrack,
+                EventType.ColorTrack,
                 EventType.AnimateTrack
             ]);
         }
@@ -397,7 +397,7 @@ public static class LevelUtils
     /// 每层根据其深度具有不同的缩放和视差值。
     /// </remarks>
     public static void AddCube(this Level level, string cubeImage, Tuple<float, float> position,
-        Tuple<float, float> size, int floorCount = 100,int floor = 0,string tag = "",bool relativeToScreen = false)
+        Tuple<float, float> size, int floorCount = 100, int floor = 0, string tag = "", bool relativeToScreen = false)
     {
         for (int i = 0; i < floorCount; i++)
         {
@@ -415,7 +415,7 @@ public static class LevelUtils
                 ["depth"] = i, // 设置深度，确保正确的渲染顺序
                 ["syncFloorDepth"] = false
             };
-            level.AddDecoration(floor,tag: tag,relativeToScreen:relativeToScreen,data: data);
+            level.AddDecoration(floor, tag: tag, relativeToScreen: relativeToScreen, data: data);
         }
     }
 
@@ -433,16 +433,18 @@ public static class LevelUtils
     /// 此方法处理关卡的角度数据、事件（SetSpeed、PositionTrack），
     /// 并生成具有正确位置、角度、BPM和网格数据的Floor实例。
     /// </remarks>
-    public static List<Floor> CreateFloors(this Level level,Vector2 startPosition = default, bool usePositionTrack = false)
+    public static List<Floor> CreateFloors(this Level level, Vector2 startPosition = default, bool usePositionTrack = false)
     {
         List<Floor> floors = new List<Floor>();
         var angles = level.angles.ToList();
         var noteTimes = level.GetNoteTimes();
         double[] anglesArray = angles.ToArray();
         List<bool> midSpins = new();
-        for (int i = 0; i < anglesArray.Length; i++) {
+        for (int i = 0; i < anglesArray.Length; i++)
+        {
             midSpins.Add(anglesArray[i].Equals(999));
-            if (anglesArray[i].Equals(999)) {
+            if (anglesArray[i].Equals(999))
+            {
                 anglesArray[i] = anglesArray[i - 1] + 180;
             }
         }
@@ -450,7 +452,8 @@ public static class LevelUtils
         double[] SetSpeedBpm = new Double[n];
         double[] SetSpeedMultiplier = new Double[n];
         bool[] setSpeedIsMultiplier = new Boolean[n];
-        for (int i = 0; i < n; i++) {
+        for (int i = 0; i < n; i++)
+        {
             SetSpeedBpm[i] = 0;
             SetSpeedMultiplier[i] = 0;
             setSpeedIsMultiplier[i] = false;
@@ -458,15 +461,18 @@ public static class LevelUtils
         Vector2 startPos = new Vector2(startPosition.X, startPosition.Y);
         List<BaseEvent> allEvents = level.DeserializeEvents().ToList();
         List<PositionTrack> positionTracks = allEvents.Where(e => e is PositionTrack).Cast<PositionTrack>().ToList();
-        for (int a = 0; a < allEvents.Count; a++) {
+        for (int a = 0; a < allEvents.Count; a++)
+        {
             BaseEvent eventObj = allEvents[a];
             int floor = eventObj.Floor;
-            if (eventObj is SetSpeed setSpeed) {
+            if (eventObj is SetSpeed setSpeed)
+            {
                 if (setSpeed.SpeedType == EventEnums.SpeedType.Multiplier)
                 {
                     SetSpeedMultiplier[floor] = setSpeed.BpmMultiplier;
                     setSpeedIsMultiplier[floor] = true;
-                } else
+                }
+                else
                 {
                     SetSpeedBpm[floor] = setSpeed.BeatsPerMinute;
                     setSpeedIsMultiplier[floor] = false;
@@ -478,7 +484,8 @@ public static class LevelUtils
         Vector2[] posArr = new Vector2[n];
         float[] angle1Arr = new float[n];
         float[] angle2Arr = new float[n];
-        for (int i = 0; i < n; i++) {
+        for (int i = 0; i < n; i++)
+        {
             float angle1 = (i == anglesArray.Length) ? (float)anglesArray[i - 1] : (float)anglesArray[i];
             float angle2 = (i == 0) ? 0 : (float)anglesArray[i - 1];
             // 先判断当前floor是否有PositionTrack，若有则修正startPos
@@ -486,8 +493,9 @@ public static class LevelUtils
             {
                 foreach (var positionTrack in positionTracks)
                 {
-                    if (positionTrack.Floor == i && !positionTrack.EditorOnly) {
-                        Vector2 position = new Vector2(positionTrack.PositionOffset[0], positionTrack.PositionOffset[1]);
+                    if (positionTrack.Floor == i && !positionTrack.EditorOnly)
+                    {
+                        Vector2 position = new Vector2(positionTrack.PositionOffset[0].ToFloat(), positionTrack.PositionOffset[1].ToFloat());
                         startPos += new Vector2(position.X * Floor.length * 2, position.Y * Floor.length * 2);
                     }
                 }
@@ -495,25 +503,29 @@ public static class LevelUtils
             posArr[i] = new(startPos.X, startPos.Y);
             angle1Arr[i] = angle1;
             angle2Arr[i] = angle2;
-            Vector2 step = new Vector2(Floor.length * 2 * MathF.Cos(angle1,true), Floor.length * 2 * MathF.Sin(angle1,true));
+            Vector2 step = new Vector2(Floor.length * 2 * FloatMath.Cos(angle1, true), Floor.length * 2 * FloatMath.Sin(angle1, true));
             startPos += (step);
             Floor tile = new Floor(angle1Arr[i], angle2Arr[i] - 180, posArr[i]);
-            if (i == angles.Count) {
-                tile.isMidspin =(false);
-            } else {
-                tile.isMidspin =(midSpins[i]);
+            if (i == angles.Count)
+            {
+                tile.isMidspin = (false);
+            }
+            else
+            {
+                tile.isMidspin = (midSpins[i]);
             }
             tile.angle = i == anglesArray.Length ? (float)anglesArray[i - 1] + 180 : (float)anglesArray[i];
             tileArr[i] = tile;
         }
         double bpm = level.GetSetting<double>("bpm");
         bool isCW = true;
-        for (int i = 0; i < tileArr.Length; i++) 
+        for (int i = 0; i < tileArr.Length; i++)
         {
             Floor tile = tileArr[i];
-            if (setSpeedIsMultiplier[i] && SetSpeedMultiplier[i] != 0) {
+            if (setSpeedIsMultiplier[i] && SetSpeedMultiplier[i] != 0)
+            {
                 bpm *= SetSpeedMultiplier[i];
-            } 
+            }
             else if (SetSpeedBpm[i] != 0)
             {
                 bpm = SetSpeedBpm[i];
@@ -525,10 +537,12 @@ public static class LevelUtils
             }
             tile.isCW = isCW;
             tile.index = i;
-            if (i < tileArr.Length - 1) {
+            if (i < tileArr.Length - 1)
+            {
                 tile.nextFloor = tileArr[i + 1];
             }
-            if (i > 0) {
+            if (i > 0)
+            {
                 tile.lastFloor = tileArr[i - 1];
             }
             tile.entryTime = noteTimes[i];

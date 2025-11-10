@@ -1,5 +1,4 @@
 using Newtonsoft.Json.Linq;
-using SharpFAI.Events;
 using SharpFAI.Serialization;
 
 namespace SharpFAI.Util;

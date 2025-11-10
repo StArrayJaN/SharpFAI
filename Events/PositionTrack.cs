@@ -11,7 +11,7 @@ public class PositionTrack : BaseEvent
     /// Position offset [x, y]
     /// </summary>
     [JsonProperty("positionOffset")]
-    public float[] PositionOffset;
+    public double[] PositionOffset;
     
     /// <summary>
     /// 相对于 [轨道索引, 瓦片参考类型]
@@ -25,21 +25,21 @@ public class PositionTrack : BaseEvent
     /// Rotation angle
     /// </summary>
     [JsonProperty("rotation")]
-    public float Rotation;
+    public double Rotation;
     
     /// <summary>
     /// 缩放百分比
     /// Scale percentage
     /// </summary>
     [JsonProperty("scale")]
-    public float Scale;
+    public double Scale;
     
     /// <summary>
     /// 不透明度百分比
     /// Opacity percentage
     /// </summary>
     [JsonProperty("opacity")]
-    public float Opacity;
+    public double Opacity;
     
     /// <summary>
     /// 仅此瓦片
@@ -62,11 +62,11 @@ public class PositionTrack : BaseEvent
     [JsonProperty("stickToFloors")]
     public bool StickToFloors;
     
-    public PositionTrack(float[] positionOffset = null,
+    public PositionTrack(double[] positionOffset = null,
         object[] relativeTo = null,
-        float rotation = 0,
-        float scale = 100,
-        float opacity = 100,
+        double rotation = 0,
+        double scale = 100,
+        double opacity = 100,
         bool justThisTile = false,
         bool editorOnly = false,
         bool stickToFloors = true)

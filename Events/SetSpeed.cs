@@ -17,26 +17,26 @@ public class SetSpeed : BaseEvent
     /// Beats per minute
     /// </summary>
     [JsonProperty("beatsPerMinute")]
-    public float BeatsPerMinute;
+    public double BeatsPerMinute;
     
     /// <summary>
     /// BPM 倍率
     /// BPM multiplier
     /// </summary>
     [JsonProperty("bpmMultiplier")]
-    public float BpmMultiplier;
+    public double BpmMultiplier;
     
     /// <summary>
     /// 角度偏移
     /// Angle offset
     /// </summary>
     [JsonProperty("angleOffset")]
-    public float AngleOffset;
+    public double AngleOffset;
     
     public SetSpeed(EventEnums.SpeedType speedType = EventEnums.SpeedType.Bpm,
-        float beatsPerMinute = 100,
-        float bpmMultiplier = 1,
-        float angleOffset = 0)
+        double beatsPerMinute = 100,
+        double bpmMultiplier = 1,
+        double angleOffset = 0)
     {
         EventType = EventType.SetSpeed;
         SpeedType = speedType;

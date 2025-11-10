@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net481</TargetFramework>
+    <TargetFrameworks>net481;net6.0</TargetFrameworks>
     <LangVersion>latest</LangVersion>
     <RootNamespace>SharpFAI</RootNamespace>
     <AssemblyName>SharpFAI</AssemblyName>
@@ -33,20 +33,13 @@
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
-
+    
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="\" />
     <None Remove="SharpFAI-Player\**" />
-    <None Remove="GameSources\**" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Remove="SharpFAI-Player\**" />
-    <Compile Remove="GameSources\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Remove="SharpFAI-Player\**" />
-    <EmbeddedResource Remove="GameSources\**" />
   </ItemGroup>
 </Project>

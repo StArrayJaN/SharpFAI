@@ -1,8 +1,9 @@
 using System;
+#pragma warning disable CS1591 // 缺少对公共可见类型或成员的 XML 注释
 
 namespace SharpFAI.Util;
 
-public static class MathF
+public static class FloatMath
 {
     public const float PI = 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679f;
     

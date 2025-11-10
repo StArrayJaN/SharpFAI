@@ -10,7 +10,7 @@ public class Pause : BaseEvent
     /// Pause duration in seconds
     /// </summary>
     [JsonProperty("duration")]
-    public float Duration;
+    public double Duration;
     
     /// <summary>
     /// 倒计时刻度
@@ -26,7 +26,7 @@ public class Pause : BaseEvent
     [JsonProperty("angleCorrectionDir")]
     public EventEnums.AngleCorrectionDirection AngleCorrectionDir;
     
-    public Pause(float duration = 1,
+    public Pause(double duration = 1,
         int countdownTicks = 0, 
         EventEnums.AngleCorrectionDirection angleCorrectionDir = EventEnums.AngleCorrectionDirection.Backward)
     {

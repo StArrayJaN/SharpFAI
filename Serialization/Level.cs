@@ -126,7 +126,7 @@ namespace SharpFAI.Serialization
         /// </summary>
         private void InitAngleData()
         {
-            if (this.angles.Any()) return;
+            if (this.angles?.Any() ?? false) return;
             List<TileAngle> tileAngles = root["pathData"]
                 .ToObject<string>()
                 .ToCharArray()
@@ -140,7 +140,7 @@ namespace SharpFAI.Serialization
                     angles.Add(angle.Angle);
                     continue;
                 }
-                staticAngle = angle.Relative ? MathF.GeneralizeAngle(staticAngle + 180 - angle.Angle) : angle.Angle;
+                staticAngle = angle.Relative ? FloatMath.GeneralizeAngle(staticAngle + 180 - angle.Angle) : angle.Angle;
                 angles.Add(staticAngle);
             }
             this.angles = angles;

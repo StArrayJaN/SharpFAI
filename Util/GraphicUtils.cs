@@ -5,9 +5,9 @@ using System.Numerics;
 
 namespace SharpFAI.Util;
 
-public class GraphicUtils
+internal static class GraphicUtils
 {
-    public static void CreateCircle(Vector3 center, float r, Color c, List<Vector3> vertices, List<int> triangles, List<Color> colors, int resolution) {
+     public static void CreateCircle(Vector3 center, float r, Color c, List<Vector3> vertices, List<int> triangles, List<Color> colors, int resolution) {
         if (resolution <= 0) {
             resolution = 32; // Default value if not provided
         }

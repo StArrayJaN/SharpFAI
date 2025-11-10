@@ -10,7 +10,7 @@ public class Hold : BaseEvent
     /// Duration in seconds
     /// </summary>
     [JsonProperty("duration")] 
-    public float Duration;
+    public double Duration;
 
     /// <summary>
     /// 距离
@@ -26,7 +26,7 @@ public class Hold : BaseEvent
     [JsonProperty("landingAnimation")]
     public bool LandingAnimation;
     
-    public Hold(float duration = 0,
+    public Hold(double duration = 0,
         int distanceMultiplier = 100,
         bool landingAnimation = false)
     {

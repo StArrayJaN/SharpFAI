@@ -1,9 +1,7 @@
-using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Numerics;
-using System.Text;
 using SharpFAI.Serialization;
 using SharpFAI.Util;
 
@@ -123,8 +121,8 @@ public class Floor
     public Polygon GeneratePolygon()
     {
         if (!floorPolygon.IsEmpty()) return floorPolygon;
-        this.floorPolygon = isMidspin ? CreateMidspinPolygon(entryAngle.ToFloat()) : CreateFloorPolygon();
-        return this.floorPolygon;
+        floorPolygon = isMidspin ? CreateMidspinPolygon(entryAngle.ToFloat()) : CreateFloorPolygon();
+        return floorPolygon;
     }
     
     private Polygon CreateFloorPolygon() 
@@ -136,18 +134,18 @@ public class Floor
         List<Color> colors = [];
 
         #region 基础处理
-        float m11 = MathF.Cos(entryAngle / 180f * (float)MathF.PI);
-        float m12 = MathF.Sin(entryAngle / 180f * (float)MathF.PI);
-        float m21 = MathF.Cos(exitAngle / 180f * (float)MathF.PI);
-        float m22 = MathF.Sin(exitAngle / 180f * (float)MathF.PI);
+        float m11 = FloatMath.Cos(entryAngle / 180f * FloatMath.PI);
+        float m12 = FloatMath.Sin(entryAngle / 180f * FloatMath.PI);
+        float m21 = FloatMath.Cos(exitAngle / 180f * FloatMath.PI);
+        float m22 = FloatMath.Sin(exitAngle / 180f * FloatMath.PI);
         float[] a = new float[2];
 
         if ((entryAngle - exitAngle).Fmod(360f) >= (exitAngle - entryAngle).Fmod(360f)) {
-            a[0] = entryAngle.Fmod(360f) * (float)MathF.PI / 180f;
-            a[1] = a[0] + (exitAngle - entryAngle).Fmod(360f) * (float)MathF.PI / 180f;
+            a[0] = entryAngle.Fmod(360f) * FloatMath.PI / 180f;
+            a[1] = a[0] + (exitAngle - entryAngle).Fmod(360f) * FloatMath.PI / 180f;
         } else {
-            a[0] = exitAngle.Fmod(360f)* (float)MathF.PI / 180f;
-            a[1] = a[0] + (entryAngle - exitAngle).Fmod(360f) * (float)MathF.PI / 180f;
+            a[0] = exitAngle.Fmod(360f)* FloatMath.PI / 180f;
+            a[1] = a[0] + (entryAngle - exitAngle).Fmod(360f) * FloatMath.PI / 180f;
         }
         float angle = a[1] - a[0];
         float mid = a[0] + angle / 2f;
@@ -159,13 +157,13 @@ public class Floor
             if (angle < 0.08726646f) {
                 x = 1f;
             } else if (angle < 0.5235988f) {
-                x = MathF.Lerp(1f, 0.83f, MathF.Pow((angle - 0.08726646f) / 0.43633235f, 0.5f));
+                x = FloatMath.Lerp(1f, 0.83f, FloatMath.Pow((angle - 0.08726646f) / 0.43633235f, 0.5f));
             } else if (angle < 0.7853982f) {
-                x = MathF.Lerp(0.83f, 0.77f, MathF.Pow((angle - 0.5235988f) / 0.2617994f, 1f));
+                x = FloatMath.Lerp(0.83f, 0.77f, FloatMath.Pow((angle - 0.5235988f) / 0.2617994f, 1f));
             } else if (angle < 1.5707964f) {
-                x = MathF.Lerp(0.77f, 0.15f, MathF.Pow((angle - 0.7853982f) / 0.7853982f, 0.7f));
+                x = FloatMath.Lerp(0.77f, 0.15f, FloatMath.Pow((angle - 0.7853982f) / 0.7853982f, 0.7f));
             } else {
-                x = MathF.Lerp(0.15f, 0f, MathF.Pow((angle - 1.5707964f) / 0.5235988f, 0.5f));
+                x = FloatMath.Lerp(0.15f, 0f, FloatMath.Pow((angle - 1.5707964f) / 0.5235988f, 0.5f));
             }
             float distance;
             float radius;
@@ -173,24 +171,24 @@ public class Floor
                 distance = 0f;
                 radius = width;
             } else {
-                radius = MathF.Lerp(0f, width, x);
-                distance = (width - radius) / MathF.Sin(angle / 2f);
+                radius = FloatMath.Lerp(0f, width, x);
+                distance = (width - radius) / FloatMath.Sin(angle / 2f);
 
             }
-            float circlex = -distance * MathF.Cos(mid);
-            float circley = -distance * MathF.Sin(mid);
+            float circlex = -distance * FloatMath.Cos(mid);
+            float circley = -distance * FloatMath.Sin(mid);
             width += outline;
             length += outline;
             radius += outline;
             GraphicUtils.CreateCircle(new Vector3(circlex, circley, 0), radius, Color.Black, vertices, triangles, colors, 0);
             {
                 int count = vertices.Count;
-                vertices.Add(new Vector3(-radius * MathF.Sin(a[1]) + circlex, radius * MathF.Cos(a[1]) + circley, 0));
+                vertices.Add(new Vector3(-radius * FloatMath.Sin(a[1]) + circlex, radius * FloatMath.Cos(a[1]) + circley, 0));
                 vertices.Add(new Vector3(circlex, circley, 0));
-                vertices.Add(new Vector3(radius * MathF.Sin(a[0]) + circlex, -radius * MathF.Cos(a[0]) + circley, 0));
-                vertices.Add(new Vector3(width * MathF.Sin(a[0]), -width * MathF.Cos(a[0]), 0));
+                vertices.Add(new Vector3(radius * FloatMath.Sin(a[0]) + circlex, -radius * FloatMath.Cos(a[0]) + circley, 0));
+                vertices.Add(new Vector3(width * FloatMath.Sin(a[0]), -width * FloatMath.Cos(a[0]), 0));
                 vertices.Add(Vector3.Zero);
-                vertices.Add(new Vector3(-width * MathF.Sin(a[1]), width * MathF.Cos(a[1]), 0));
+                vertices.Add(new Vector3(-width * FloatMath.Sin(a[1]), width * FloatMath.Cos(a[1]), 0));
                 triangles.Add(count);
                 triangles.Add(count + 1);
                 triangles.Add(count + 5);
@@ -237,18 +235,18 @@ public class Floor
             radius -= outline * 2f;
             if (radius < 0) {
                 radius = 0;
-                circlex = -width / MathF.Sin(angle / 2f) * MathF.Cos(mid);
-                circley = -width / MathF.Sin(angle / 2f) * MathF.Sin(mid);
+                circlex = -width / FloatMath.Sin(angle / 2f) * FloatMath.Cos(mid);
+                circley = -width / FloatMath.Sin(angle / 2f) * FloatMath.Sin(mid);
             }
             GraphicUtils.CreateCircle(new Vector3(circlex, circley, 0), radius, Color.White, vertices, triangles, colors, 0);
             {
                 int count = vertices.Count;
-                vertices.Add(new Vector3(-radius * MathF.Sin(a[1]) + circlex, radius * MathF.Cos(a[1]) + circley, 0));
+                vertices.Add(new Vector3(-radius * FloatMath.Sin(a[1]) + circlex, radius * FloatMath.Cos(a[1]) + circley, 0));
                 vertices.Add(new Vector3(circlex, circley, 0));
-                vertices.Add(new Vector3(radius * MathF.Sin(a[0]) + circlex, -radius * MathF.Cos(a[0]) + circley, 0));
-                vertices.Add(new Vector3(width * MathF.Sin(a[0]), -width * MathF.Cos(a[0]), 0));
+                vertices.Add(new Vector3(radius * FloatMath.Sin(a[0]) + circlex, -radius * FloatMath.Cos(a[0]) + circley, 0));
+                vertices.Add(new Vector3(width * FloatMath.Sin(a[0]), -width * FloatMath.Cos(a[0]), 0));
                 vertices.Add(Vector3.Zero);
-                vertices.Add(new Vector3(-width * MathF.Sin(a[1]), width * MathF.Cos(a[1]), 0));
+                vertices.Add(new Vector3(-width * FloatMath.Sin(a[1]), width * FloatMath.Cos(a[1]), 0));
                 triangles.Add(count);
                 triangles.Add(count + 1);
                 triangles.Add(count + 5);
@@ -294,15 +292,15 @@ public class Floor
             width += outline;
             length += outline;
 
-            float circlex = -width / MathF.Sin(angle / 2f) * MathF.Cos(mid);
-            float circley = -width / MathF.Sin(angle / 2f) * MathF.Sin(mid);
+            float circlex = -width / FloatMath.Sin(angle / 2f) * FloatMath.Cos(mid);
+            float circley = -width / FloatMath.Sin(angle / 2f) * FloatMath.Sin(mid);
 
             {
                 int count = 0;
                 vertices.Add(new Vector3(circlex, circley, 0));
-                vertices.Add(new Vector3(width * MathF.Sin(a[0]), -width * MathF.Cos(a[0]), 0));
+                vertices.Add(new Vector3(width * FloatMath.Sin(a[0]), -width * FloatMath.Cos(a[0]), 0));
                 vertices.Add(Vector3.Zero);
-                vertices.Add(new Vector3(-width * MathF.Sin(a[1]), width * MathF.Cos(a[1]), 0));
+                vertices.Add(new Vector3(-width * FloatMath.Sin(a[1]), width * FloatMath.Cos(a[1]), 0));
                 triangles.Add(0);
                 triangles.Add(1);
                 triangles.Add(2);
@@ -341,15 +339,15 @@ public class Floor
             width -= outline * 2f;
             length -= outline * 2f;
 
-            circlex = -width / MathF.Sin(angle / 2f) * MathF.Cos(mid);
-            circley = -width / MathF.Sin(angle / 2f) * MathF.Sin(mid);
+            circlex = -width / FloatMath.Sin(angle / 2f) * FloatMath.Cos(mid);
+            circley = -width / FloatMath.Sin(angle / 2f) * FloatMath.Sin(mid);
 
             {
                 int count = vertices.Count;
                 vertices.Add(new Vector3(circlex, circley, 0));
-                vertices.Add(new Vector3(width * MathF.Sin(a[0]), -width * MathF.Cos(a[0]), 0));
+                vertices.Add(new Vector3(width * FloatMath.Sin(a[0]), -width * FloatMath.Cos(a[0]), 0));
                 vertices.Add(Vector3.Zero);
-                vertices.Add(new Vector3(-width * MathF.Sin(a[1]), width * MathF.Cos(a[1]), 0));
+                vertices.Add(new Vector3(-width * FloatMath.Sin(a[1]), width * FloatMath.Cos(a[1]), 0));
                 triangles.Add(count);
                 triangles.Add(count + 1);
                 triangles.Add(count + 2);
@@ -431,7 +429,7 @@ public class Floor
             #endregion
         }
         
-        Polygon polygon = new Polygon()
+        Polygon polygon = new Polygon
         {
             vertices = vertices.ToArray(),
             triangles = triangles.Select(x => (short) x).ToArray(),
@@ -444,8 +442,8 @@ public class Floor
 
         float width = Floor.width;
         float length = Floor.width;
-        float m1 = MathF.Cos(a1 / 180f * MathF.PI);
-        float m2 = MathF.Sin(a1 / 180f * MathF.PI);
+        float m1 = FloatMath.Cos(a1 / 180f * FloatMath.PI);
+        float m2 = FloatMath.Sin(a1 / 180f * FloatMath.PI);
 
         #region 主体
         List<Vector3> vertices = [];
@@ -500,7 +498,7 @@ public class Floor
         }
         #endregion
      
-        Polygon polygon = new Polygon()
+        Polygon polygon = new Polygon
         {
             vertices = vertices.ToArray(),
             triangles = triangles.Select(x => (short) x).ToArray(),

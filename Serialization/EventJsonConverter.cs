@@ -23,10 +23,84 @@ public class EventJsonConverter : JsonConverter<BaseEvent>
         { "PositionTrack", typeof(PositionTrack) },
         { "Hold", typeof(Hold) },
         { "MoveCamera", typeof(MoveCamera) },
+        {"FreeRoam", typeof(FreeRoam) },
         { "Unknown", typeof(Unknown) }
     };
 
     public override bool CanWrite => false;
+
+    /// <summary>
+    /// 支持将字符串 "Enabled"/"Disabled"（不区分大小写）和 "True"/"False"、"1"/"0" 反序列化为 bool/Nullable(bool)
+    /// Supports deserializing strings "Enabled"/"Disabled" (case-insensitive) and "True"/"False", "1"/"0" into bool/Nullable(bool)
+    /// </summary>
+    private sealed class StringBooleanConverter : JsonConverter
+    {
+        public override bool CanConvert(Type objectType)
+        {
+            Type t = Nullable.GetUnderlyingType(objectType) ?? objectType;
+            return t == typeof(bool);
+        }
+        
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        {
+            bool isNullable = Nullable.GetUnderlyingType(objectType) != null;
+            if (reader.TokenType == JsonToken.Null)
+            {
+                if (!isNullable)
+                    throw new JsonSerializationException("Cannot convert null value to non-nullable bool.");
+                return null;
+            }
+            
+            if (reader.TokenType == JsonToken.Boolean)
+                return reader.Value;
+            
+            if (reader.TokenType == JsonToken.Integer)
+            {
+                try
+                {
+                    long v = Convert.ToInt64(reader.Value);
+                    return v != 0;
+                }
+                catch
+                {
+                    throw new JsonSerializationException($"Invalid numeric value for bool: {reader.Value}");
+                }
+            }
+            
+            if (reader.TokenType == JsonToken.String)
+            {
+                string s = (reader.Value as string)?.Trim() ?? string.Empty;
+                if (string.Equals(s, "Enabled", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(s, "true", StringComparison.OrdinalIgnoreCase) ||
+                    s == "1")
+                    return true;
+                
+                if (string.Equals(s, "Disabled", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(s, "false", StringComparison.OrdinalIgnoreCase) ||
+                    s == "0")
+                    return false;
+                
+                // Fallback: try bool parse
+                if (bool.TryParse(s, out bool parsed))
+                    return parsed;
+                
+                throw new JsonSerializationException($"Cannot convert string '{s}' to bool.");
+            }
+            
+            throw new JsonSerializationException($"Unexpected token {reader.TokenType} when parsing bool.");
+        }
+        
+        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        {
+            // 默认写出 true/false
+            if (value == null)
+            {
+                writer.WriteNull();
+                return;
+            }
+            writer.WriteValue((bool)value);
+        }
+    }
 
     /// <summary>
     /// 读取并反序列化事件，根据 eventType 选择具体类型
@@ -42,25 +116,13 @@ public class EventJsonConverter : JsonConverter<BaseEvent>
             };
 
         var jsonObject = JObject.Load(reader);
-        
+
         // 获取事件类型
         var eventTypeToken = jsonObject["eventType"];
         if (eventTypeToken == null)
             throw new JsonSerializationException("Missing 'eventType' property in JSON");
 
         var eventTypeString = eventTypeToken.ToString();
-        /*if (jsonObject.ContainsKey("position"))
-        {
-            JArray position = (JArray)jsonObject["position"];
-            for (int i = 0; i < position.Count; i++)
-            {
-                if (position[i].ToString() == "null")
-                {
-                    position[i] = JToken.FromObject("0");
-                }
-            }
-            jsonObject["position"] = position;
-        }*/
         
         // 根据事件类型创建相应的实例
         if (!EventTypeMap.TryGetValue(eventTypeString, out var targetType))
@@ -72,11 +134,11 @@ public class EventJsonConverter : JsonConverter<BaseEvent>
         // 使用默认序列化器反序列化到具体类型
         var settings = new JsonSerializerSettings();
         // 枚举序列化为名字，不允许整数形式
-        StringEnumConverter stringEnumConverter = new();
-        settings.Converters.Add(stringEnumConverter);
+        settings.Converters.Add(new StringEnumConverter());
+        // 支持 Enabled/Disabled -> bool
+        settings.Converters.Add(new StringBooleanConverter());
         
         var eventInstance = (BaseEvent)jsonObject.ToObject(targetType, JsonSerializer.Create(settings));
-        
         // 如果是未知事件类型，保存原始事件类型信息
         if (eventInstance is Unknown unknownEvent && !EventTypeMap.ContainsKey(eventTypeString))
         {
@@ -85,6 +147,7 @@ public class EventJsonConverter : JsonConverter<BaseEvent>
         }
         
         return eventInstance;
+  
     }
 
     /// <summary>
@@ -102,12 +165,15 @@ public class EventJsonConverter : JsonConverter<BaseEvent>
     /// </summary>
     public static JsonSerializerSettings GetJsonSettings()
     {
-        return new JsonSerializerSettings
+        var settings = new JsonSerializerSettings
         {
             NullValueHandling = NullValueHandling.Include,
-            DefaultValueHandling = DefaultValueHandling.Include,
-            Converters = { new EventJsonConverter(), new StringEnumConverter() }
+            DefaultValueHandling = DefaultValueHandling.Include
         };
+        settings.Converters.Add(new StringBooleanConverter());
+        settings.Converters.Add(new EventJsonConverter());
+        settings.Converters.Add(new StringEnumConverter());
+        return settings;
     }
 
     public static T? Deserialize<T>(string json)
