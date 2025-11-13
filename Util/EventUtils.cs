@@ -2,7 +2,7 @@ using Newtonsoft.Json.Linq;
 using SharpFAI.Serialization;
 
 namespace SharpFAI.Util;
-
+#pragma warning disable CS1591
 public static class EventUtils
 {
     public static void MoveDecorations(this Level level, int floor, double duration, int opacity, string tag)

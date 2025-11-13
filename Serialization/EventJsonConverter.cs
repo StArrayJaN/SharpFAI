@@ -6,7 +6,7 @@ using Newtonsoft.Json.Linq;
 using SharpFAI.Events;
 
 namespace SharpFAI.Serialization;
-
+#pragma warning disable CS1591
 /// <summary>
 /// 事件 JSON 转换器：根据 eventType 做多态反序列化，并确保枚举以名字序列化
 /// Event JSON converter: polymorphic deserialization by eventType, ensuring enums serialize as names

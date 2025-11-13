@@ -1,16 +1,13 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net481;net6.0</TargetFrameworks>
     <LangVersion>latest</LangVersion>
     <RootNamespace>SharpFAI</RootNamespace>
     <AssemblyName>SharpFAI</AssemblyName>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    
     <!-- Version Configuration -->
-    <VersionPrefix>1.0.8</VersionPrefix>
+    <VersionPrefix>1.0.9</VersionPrefix>
     <Version>$(VersionPrefix)</Version>
-    
     <!-- NuGet Package Configuration -->
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>SharpFAI</PackageId>
@@ -29,16 +26,13 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
-    
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="\" />
     <None Remove="SharpFAI-Player\**" />
   </ItemGroup>
-
   <ItemGroup>
     <Compile Remove="SharpFAI-Player\**" />
   </ItemGroup>

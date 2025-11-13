@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 
 namespace SharpFAI.Util;
-
+#pragma warning disable CS1591
 /// <summary>
 /// 所有音调
 /// All tones

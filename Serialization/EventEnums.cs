@@ -1,5 +1,6 @@
 namespace SharpFAI.Serialization;
 
+#pragma warning disable CS1591
 /// <summary>
 /// 事件用到的枚举集合
 /// Enum collection used by events

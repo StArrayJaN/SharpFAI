@@ -37,12 +37,7 @@ public interface ICamera
     /// Update camera state / 更新相机状态
     /// </summary>
     void Update(float deltaTime);
-    
-    /// <summary>
-    /// Move camera to target position / 移动相机到目标位置
-    /// </summary>
-    void MoveTo(Vector2 target, float duration = 0, EaseType easeType = EaseType.Linear);
-    
+
     /// <summary>
     /// Set camera to follow a target / 设置相机跟随目标
     /// </summary>
@@ -94,43 +89,3 @@ public interface ICamera
     /// </summary>
     void GetFrustumBounds(out Vector2 min, out Vector2 max);
 }
-
-/// <summary>
-/// Camera easing types for smooth movement
-/// 相机平滑移动的缓动类型
-/// </summary>
-public enum EaseType
-{
-    Linear,
-    EaseIn,
-    EaseOut,
-    EaseInOut,
-    EaseInQuad,
-    EaseOutQuad,
-    EaseInOutQuad,
-    EaseInCubic,
-    EaseOutCubic,
-    EaseInOutCubic,
-    EaseInQuart,
-    EaseOutQuart,
-    EaseInOutQuart,
-    EaseInSine,
-    EaseOutSine,
-    EaseInOutSine,
-    EaseInExpo,
-    EaseOutExpo,
-    EaseInOutExpo,
-    EaseInCirc,
-    EaseOutCirc,
-    EaseInOutCirc,
-    EaseInElastic,
-    EaseOutElastic,
-    EaseInOutElastic,
-    EaseInBack,
-    EaseOutBack,
-    EaseInOutBack,
-    EaseInBounce,
-    EaseOutBounce,
-    EaseInOutBounce
-}
-

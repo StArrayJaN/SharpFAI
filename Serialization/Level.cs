@@ -56,7 +56,13 @@ namespace SharpFAI.Serialization
         /// 表示关卡文件路径的字符串
         /// Path to the level file
         /// </summary>
-        public string? pathToLevel;
+        public string? pathToLevel { get; private set; }
+
+        /// <summary>
+        /// 反序列化后的所有事件
+        /// All events after deserialization
+        /// </summary>
+        public ReadOnlyCollection<BaseEvent>? deserializedEvents { get; private set; }
         
         /// <summary>
         /// 通过关卡信息字典初始化 Level 类的新实例
@@ -82,6 +88,7 @@ namespace SharpFAI.Serialization
             {
                 decorations = root["decorations"].ToObject<JArray>();
             }
+            deserializedEvents = DeserializeEvents();
         }
 
         /// <summary>
@@ -253,11 +260,11 @@ namespace SharpFAI.Serialization
         public List<JObject> GetEvents(int floor, EventType type)
         {
             var events = new List<JObject>();
-            foreach (JObject action in actions)
+            foreach (var baseEvent in deserializedEvents)
             {
-                if (action["floor"].Value<int>() == floor && action["eventType"].Value<string>() == type.ToString())
+                if (baseEvent.Floor == floor && baseEvent.EventType == type)
                 {
-                    events.Add(action);
+                    events.Add(JObject.Parse(baseEvent.ToString()));
                 }
             }
             return events;
@@ -459,13 +466,18 @@ namespace SharpFAI.Serialization
         /// <returns>Read-only list of events in the same order as actions (and decorations if included); returns empty list when none / 只读的事件列表，顺序与 actions（以及包含时的 decorations）一致；若无事件返回空列表而非 null</returns>
         public ReadOnlyCollection<BaseEvent> DeserializeEvents(bool includeDecorations = false)
         {
-            List<BaseEvent> baseEvents = [];
-            baseEvents.AddRange(JsonConvert.DeserializeObject<BaseEvent[]>(actions.ToString(), EventJsonConverter.GetJsonSettings()));
-            if (includeDecorations && decorations != null)
+            if (deserializedEvents == null)
             {
-                baseEvents.AddRange(JsonConvert.DeserializeObject<BaseEvent[]>(decorations.ToString(), EventJsonConverter.GetJsonSettings()));
+                List<BaseEvent> baseEvents = [];
+                baseEvents.AddRange(JsonConvert.DeserializeObject<BaseEvent[]>(actions.ToString(), EventJsonConverter.GetJsonSettings()));
+                if (includeDecorations && decorations != null)
+                {
+                    baseEvents.AddRange(JsonConvert.DeserializeObject<BaseEvent[]>(decorations.ToString(), EventJsonConverter.GetJsonSettings()));
+                }
+
+                deserializedEvents = baseEvents.AsReadOnly();
             }
-            return baseEvents.AsReadOnly(); 
+            return deserializedEvents; 
         }
 
         /// <summary>

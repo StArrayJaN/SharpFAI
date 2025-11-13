@@ -1,5 +1,5 @@
 namespace SharpFAI.Serialization;
-
+#pragma warning disable CS1591
 public enum EventType
 {
     None,

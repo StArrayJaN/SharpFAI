@@ -19,7 +19,8 @@ public static class LevelUtils
     private static List<double> noteTimesCacheWithOffset = [];
     private static List<double> allSpeedChange = [];
 
-    private struct ParsedChart
+    public static event Action<int, string> progressCallback;
+    private class ParsedChart
     {
         public double angle;
         public double bpm;
@@ -51,7 +52,7 @@ public static class LevelUtils
                 parsedChart.Add(new()
                 {
                     angle = Fmod(angleDataList[i - 1] + 180, 360),
-                    bpm = -1,
+                    bpm = 0,
                     direction = 0,
                     extraHold = 0,
                     midr = true,
@@ -63,7 +64,7 @@ public static class LevelUtils
                 parsedChart.Add(new()
                 {
                     angle = Fmod(angleData, 360),
-                    bpm = -1,
+                    bpm = 0,
                     direction = 0,
                     extraHold = 0,
                     midr = false,
@@ -76,7 +77,7 @@ public static class LevelUtils
         parsedChart.Add(new()
         {
             angle = 0,
-            bpm = -1,
+            bpm = 0,
             direction = 0,
             extraHold = 0,
             midr = false,
@@ -95,9 +96,10 @@ public static class LevelUtils
             if (o != null)
             {
                 int tile = o.Floor;
-                var eventType =o.EventType;
+                var eventType = o.EventType;
 
                 var ob = parsedChart[tile];
+                //if (ob == null) continue;
                 switch (eventType)
                 {
                     case EventType.SetSpeed:
@@ -144,7 +146,7 @@ public static class LevelUtils
         foreach (var t in parsedChart)
         {
             var ob = t;
-            
+            //if (ob == null) continue;
             // 方向处理
             if (ob.direction == -1)
             {
@@ -154,7 +156,7 @@ public static class LevelUtils
             ob.direction = direction;
 
             // BPM处理
-            if (ob.bpm.Equals(-1))
+            if (ob.bpm == 0)
             {
                 ob.bpm = currentBPM;
             }
@@ -436,9 +438,9 @@ public static class LevelUtils
     public static List<Floor> CreateFloors(this Level level, Vector2 startPosition = default, bool usePositionTrack = false)
     {
         List<Floor> floors = new List<Floor>();
-        var angles = level.angles.ToList();
+        progressCallback?.Invoke(0,"获取打击时间点");
         var noteTimes = level.GetNoteTimes();
-        double[] anglesArray = angles.ToArray();
+        double[] anglesArray = level.angles.ToArray();
         List<bool> midSpins = new();
         for (int i = 0; i < anglesArray.Length; i++)
         {
@@ -459,8 +461,8 @@ public static class LevelUtils
             setSpeedIsMultiplier[i] = false;
         }
         Vector2 startPos = new Vector2(startPosition.X, startPosition.Y);
+        progressCallback?.Invoke(25,"初始化事件");
         List<BaseEvent> allEvents = level.DeserializeEvents().ToList();
-        List<PositionTrack> positionTracks = allEvents.Where(e => e is PositionTrack).Cast<PositionTrack>().ToList();
         for (int a = 0; a < allEvents.Count; a++)
         {
             BaseEvent eventObj = allEvents[a];
@@ -484,6 +486,8 @@ public static class LevelUtils
         Vector2[] posArr = new Vector2[n];
         float[] angle1Arr = new float[n];
         float[] angle2Arr = new float[n];
+        progressCallback?.Invoke(50,"初始化位置");
+        List<PositionTrack> positionTracks = allEvents.Where(e => e is PositionTrack).Cast<PositionTrack>().ToList();
         for (int i = 0; i < n; i++)
         {
             float angle1 = (i == anglesArray.Length) ? (float)anglesArray[i - 1] : (float)anglesArray[i];
@@ -506,7 +510,7 @@ public static class LevelUtils
             Vector2 step = new Vector2(Floor.length * 2 * FloatMath.Cos(angle1, true), Floor.length * 2 * FloatMath.Sin(angle1, true));
             startPos += (step);
             Floor tile = new Floor(angle1Arr[i], angle2Arr[i] - 180, posArr[i]);
-            if (i == angles.Count)
+            if (i == anglesArray.Length)
             {
                 tile.isMidspin = (false);
             }
@@ -517,6 +521,7 @@ public static class LevelUtils
             tile.angle = i == anglesArray.Length ? (float)anglesArray[i - 1] + 180 : (float)anglesArray[i];
             tileArr[i] = tile;
         }
+        progressCallback?.Invoke(75,"初始化变速与链表关系");
         double bpm = level.GetSetting<double>("bpm");
         bool isCW = true;
         for (int i = 0; i < tileArr.Length; i++)
@@ -547,9 +552,10 @@ public static class LevelUtils
             }
             tile.entryTime = noteTimes[i];
             tile.renderOrder = -i;
-            tile.events = EventJsonConverter.Deserialize<List<BaseEvent>>(level.GetFloorEvents(i).ToString());
             floors.Add(tile);
+            progressCallback?.Invoke(75,$"初始化变速与链表关系({i}/{tileArr.Length - 1})");
         }
+        progressCallback?.Invoke(100,"完成");
         return floors;
     }
 }
