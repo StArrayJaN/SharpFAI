@@ -4,9 +4,9 @@
     <LangVersion>latest</LangVersion>
     <RootNamespace>SharpFAI</RootNamespace>
     <AssemblyName>SharpFAI</AssemblyName>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <!-- Version Configuration -->
-    <VersionPrefix>1.0.9</VersionPrefix>
+    <VersionPrefix>1.1.0</VersionPrefix>
     <Version>$(VersionPrefix)</Version>
     <!-- NuGet Package Configuration -->
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>

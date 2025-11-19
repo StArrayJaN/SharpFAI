@@ -1,8 +1,5 @@
 using System;
-using System.Diagnostics;
-using System.Linq;
 using SharpFAI.Serialization;
-using SharpFAI.Util;
 
 namespace SharpFAI.Test;
 #pragma warning disable CS1591
@@ -11,9 +8,9 @@ public static class Test
 {
     public static void Main2()
     {
-        //捅死Yqloss喵
         Level level2 = new Level(pathToLevel: @"D:\ADOFAILevels\kiss my lips\level.adofai");
-        level2.GetNoteTimes().Take(10).ToList().ForEach(Console.WriteLine);
+        var events = level2.GetEventsIf(a => a.EventType == EventType.Twirl);
+        Console.WriteLine(events.Count);
     }
     
     public static void AddSegmentsAsFloor(this Level level, double multiplier = 2, int count = 32)

@@ -44,19 +44,19 @@ namespace SharpFAI.Serialization
         /// 表示所有关卡装饰的 JSON 数组
         /// JSON array representing level decorations
         /// </summary>
-        public JArray decorations{ get; }
+        public JArray? decorations{ get; }
         
         /// <summary>
         /// 表示关卡砖块角度的只读列表
         /// Read-only list representing the angle of level tiles
         /// </summary>
-        public IReadOnlyList<double> angles { get; private set; }
+        public ReadOnlyCollection<double> angles { get; private set; }
         
         /// <summary>
         /// 表示关卡文件路径的字符串
         /// Path to the level file
         /// </summary>
-        public string? pathToLevel { get; private set; }
+        public string? pathToLevel { get; }
 
         /// <summary>
         /// 反序列化后的所有事件
@@ -77,7 +77,7 @@ namespace SharpFAI.Serialization
             if (root.ContainsKey("angleData"))
             {
                 angleData = root["angleData"].ToObject<JArray>();
-                angles = angleData.ToObject<List<double>>();
+                angles = angleData.ToObject<List<double>>().AsReadOnly();
             } 
             else if (root.ContainsKey("pathData"))
             {
@@ -150,12 +150,10 @@ namespace SharpFAI.Serialization
                 staticAngle = angle.Relative ? FloatMath.GeneralizeAngle(staticAngle + 180 - angle.Angle) : angle.Angle;
                 angles.Add(staticAngle);
             }
-            this.angles = angles;
+            this.angles = angles.AsReadOnly();
             root.Remove("pathData");
             angleData = JArray.FromObject(angles);
             root.Add("angleData", angleData);
-            
-            
         }
 
         /// <summary>
@@ -179,7 +177,7 @@ namespace SharpFAI.Serialization
         /// <param name="value">要设置的值 / The value to set</param>
         public void PutSetting<T>(string setting, T value)
         {
-            settings[setting]= JToken.FromObject(value);
+            settings[setting] = JToken.FromObject(value);
         }
 
         /// <summary>
@@ -298,6 +296,34 @@ namespace SharpFAI.Serialization
         public bool HasEvents(int floor)
         {
             return GetFloorEvents(floor).Any();
+        }
+
+        /// <summary>
+        /// 移除满足特定条件的事件
+        /// Removes events that meet a specific condition
+        /// </summary>
+        /// <param name="condition">用于判断事件是否应被移除的条件 / The condition to determine if an event should be removed</param>
+        public void RemoveEventsIf(Func<BaseEvent, bool> condition)
+        {
+            for (int i = 0; i < actions.Count; i++)
+            {
+                BaseEvent? a = EventJsonConverter.Deserialize<BaseEvent>(actions[i].ToString());
+                if (condition(a))
+                {
+                    actions.RemoveAt(i);
+                    i--;
+                }
+            }
+            if (decorations == null) return;
+            for (int i = 0; i < decorations.Count; i++)
+            {
+                BaseEvent? a = EventJsonConverter.Deserialize<BaseEvent>(decorations[i].ToString());
+                if (condition(a ?? BaseEvent.Empty))
+                {
+                    decorations.RemoveAt(i);
+                    i--;
+                }
+            }
         }
 
         /// <summary>
@@ -447,7 +473,7 @@ namespace SharpFAI.Serialization
         public JArray GetEvents(EventType type)
         {
             JArray events = [];
-            foreach (JObject action in actions)
+            foreach (var action in actions)
             {
                 if (action["eventType"].Value<string>() == type.ToString())
                 {
@@ -457,6 +483,35 @@ namespace SharpFAI.Serialization
             return events;
         }
 
+        /// <summary>
+        /// 获取满足指定条件的所有事件
+        /// Gets all events that satisfy the specified condition
+        /// </summary>
+        /// <param name="condition">用于确定事件是否应包含在列表中的委托 / Delegate to determine whether an event should be included in the list</param>
+        /// <returns>满足条件的事件列表 / A list of events that meet the condition</returns>
+        public List<BaseEvent> GetEventsIf(Func<BaseEvent, bool> condition)
+        {
+            List<BaseEvent> events = [];
+            for (int i = 0; i < actions.Count; i++)
+            {
+                BaseEvent @event = EventJsonConverter.Deserialize<BaseEvent>(actions[i].ToString()) ?? BaseEvent.Empty;
+                if (condition(@event))
+                {
+                    events.Add(@event);
+                }
+            }
+
+            if (decorations == null) return events;
+            for (int i = 0; i < decorations.Count; i++)
+            {
+                BaseEvent @event = EventJsonConverter.Deserialize<BaseEvent>(decorations[i].ToString()) ?? BaseEvent.Empty;
+                if (condition(@event))
+                {
+                    events.Add(@event);
+                }
+            }
+            return events;
+        }
 
         /// <summary>
         /// Deserializes level events into strongly-typed objects; optionally includes decorations when requested

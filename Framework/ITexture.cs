@@ -1,4 +1,3 @@
-using System.Drawing;
 using System.Numerics;
 
 namespace SharpFAI.Framework;
@@ -42,8 +41,7 @@ public interface ITexture
 	/// <summary>
 	/// Bind the texture to a texture unit / 绑定纹理到指定纹理单元
 	/// </summary>
-	/// <param name="unit">Texture unit index / 纹理单元索引</param>
-	void Bind(int unit = 0);
+	void Bind(IShader shader);
 	
 	/// <summary>
 	/// Unbind the texture / 解绑纹理
@@ -83,6 +81,7 @@ public enum TextureWrap
 	Repeat,
 	ClampToEdge
 }
+
 
 
 

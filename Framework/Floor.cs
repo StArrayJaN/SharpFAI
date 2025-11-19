@@ -16,12 +16,12 @@ public class Floor
     /// <summary>
     /// Default length of the floor tile / 地板瓦片的默认长度
     /// </summary>
-    public static float length = 50;
+    public static float length = 75;
     
     /// <summary>
-    /// Default width (half-width) of the floor tile / 地板瓦片的默认宽度（半宽）
+    /// Default width of the floor tile / 地板瓦片的默认宽度
     /// </summary>
-    public static float width = 30;
+    public static float width = 41.75f;
     
     /// <summary>
     /// Outline thickness for the floor border / 地板边框的轮廓厚度
@@ -541,16 +541,6 @@ public class Floor
             }
             return true;
         }
-        
-        /*
-        /// <summary>
-        /// Returns a string representation of the polygon
-        /// 返回多边形的字符串表示形式
-        /// </summary>
-        public override string ToString()
-        {
-            return this.AsString();
-        }*/
     }
 
     /// <summary>

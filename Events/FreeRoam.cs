@@ -99,8 +99,8 @@ public class FreeRoam : BaseEvent
     {
         EventType = EventType.FreeRoam;
         Duration = duration;
-        Size = size ?? new[] { 4, 4 };
-        PositionOffset = positionOffset ?? new[] { 0f, 0f };
+        Size = size ?? [4, 4];
+        PositionOffset = positionOffset ?? [0f, 0f];
         OutTime = outTime;
         OutEase = outEase;
         HitsoundOnBeats = hitsoundOnBeats;

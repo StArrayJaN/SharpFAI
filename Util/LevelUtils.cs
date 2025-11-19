@@ -20,6 +20,7 @@ public static class LevelUtils
     private static List<double> allSpeedChange = [];
 
     public static event Action<int, string> progressCallback;
+
     private class ParsedChart
     {
         public double angle;
@@ -29,6 +30,7 @@ public static class LevelUtils
         public bool midr;
         public int multiPlanet;
     }
+
     /// <summary>
     /// Calculates note timing for each tile in the level
     /// 计算关卡中每个瓦片的音符时间
@@ -112,6 +114,7 @@ public static class LevelUtils
                         {
                             bpm = eventObj.BeatsPerMinute * pitch;
                         }
+
                         ob.bpm = bpm;
                         break;
 
@@ -128,13 +131,15 @@ public static class LevelUtils
                         break;
 
                     case EventType.MultiPlanet:
-                        ob.multiPlanet = eventValue.ToEvent<MultiPlanet>().Planets == EventEnums.PlanetCount.ThreePlanets ? 1 : 0;
+                        ob.multiPlanet =
+                            eventValue.ToEvent<MultiPlanet>().Planets == EventEnums.PlanetCount.ThreePlanets ? 1 : 0;
                         break;
 
                     case EventType.FreeRoam:
                         ob.extraHold = (eventValue.ToEvent<FreeRoam>().Duration - 1) / 2.0;
                         break;
                 }
+
                 parsedChart[tile] = ob;
             }
         }
@@ -165,6 +170,7 @@ public static class LevelUtils
                 currentBPM = ob.bpm;
             }
         }
+
         List<double> noteTime = [];
 
         double curAngle = 0;
@@ -174,7 +180,7 @@ public static class LevelUtils
         foreach (var chartValue in parsedChart)
         {
             var o = chartValue;
-            
+
             curAngle = Fmod(curAngle - 180, 360);
             double curBPM = o.bpm;
             double destAngle = o.angle;
@@ -207,15 +213,17 @@ public static class LevelUtils
 
             curAngle = destAngle;
             noteTime.Add(curTime);
-            
         }
+
         noteTimesCache = noteTime;
         if (addOffset)
         {
             noteTimesCacheWithOffset = noteTime.Select(t => t + level.GetSetting<int>("offset")).ToList();
         }
+
         return noteTime;
         double Fmod(double a, double b) => a - b * Math.Floor(a / b);
+
         double AngleToTime(double angle, double bpm)
         {
             return angle / 180 * (60 / bpm) * 1000;
@@ -250,6 +258,7 @@ public static class LevelUtils
                     }
                 }
             }
+
             speeds[i] = speed;
         }
 
@@ -268,7 +277,8 @@ public static class LevelUtils
     /// <param name="duration">时长(秒) / Duration (in seconds)</param>
     public static void GenerateGlide(this Level level, int startFloor, Pitch startNote, Pitch endNote, double duration)
     {
-        if (startFloor < 0 || startFloor >= level.angles.Count) throw new ArgumentOutOfRangeException($"{nameof(startFloor)}:{startFloor}");
+        if (startFloor < 0 || startFloor >= level.angles.Count)
+            throw new ArgumentOutOfRangeException($"{nameof(startFloor)}:{startFloor}");
         double current = 0;
         double endFrequency = PitchHelper.GetFrequency(endNote);
         List<double> noteTimes = [];
@@ -278,6 +288,7 @@ public static class LevelUtils
             current += 1 / currentPitch;
             noteTimes.Add(currentPitch * 60);
         }
+
         noteTimes.Add(1 / (duration - current) * 60);
 
         for (int i = 0; i < noteTimes.Count; i++)
@@ -286,9 +297,10 @@ public static class LevelUtils
             {
                 level.angleData.Add(0);
             }
+
             level.AddEvent(new SetSpeed()
             {
-                Floor = startFloor + i, 
+                Floor = startFloor + i,
                 BeatsPerMinute = noteTimes[i],
                 SpeedType = EventEnums.SpeedType.Bpm
             });
@@ -303,7 +315,8 @@ public static class LevelUtils
     /// <param name="includeDecorations">是否包含装饰 / Whether to include decorations</param>
     /// <param name="includeTracks">是否包含砖块视觉效果 / Whether to include tracks</param> 
     /// <param name="onDelete">删除时的回调（传递被删除项的JSON字符串）；可为 null / Callback invoked on deletion (receives deleted item's JSON string); can be null</param>
-    public static void RemoveVFXs(this Level level, bool includeDecorations = false, bool includeTracks = false, Action<string> onDelete = null)
+    public static void RemoveVFXs(this Level level, bool includeDecorations = false, bool includeTracks = false,
+        Action<string> onDelete = null)
     {
         List<EventType> vfxTypes =
         [
@@ -348,6 +361,7 @@ public static class LevelUtils
                 EventType.AnimateTrack
             ]);
         }
+
         for (int i = 0; i < level.actions.Count; i++)
         {
             var action = level.actions[i];
@@ -381,6 +395,7 @@ public static class LevelUtils
             }
         }
     }
+
     /// <summary>
     /// Add a cube decorations with depth effect to the level / 向关卡添加一个具有深度效果的立方体装饰
     /// </summary>
@@ -435,10 +450,11 @@ public static class LevelUtils
     /// 此方法处理关卡的角度数据、事件（SetSpeed、PositionTrack），
     /// 并生成具有正确位置、角度、BPM和网格数据的Floor实例。
     /// </remarks>
-    public static List<Floor> CreateFloors(this Level level, Vector2 startPosition = default, bool usePositionTrack = false)
+    public static List<Floor> CreateFloors(this Level level, Vector2 startPosition = default,
+        bool usePositionTrack = false)
     {
         List<Floor> floors = new List<Floor>();
-        progressCallback?.Invoke(0,"获取打击时间点");
+        progressCallback?.Invoke(0, "获取打击时间点");
         var noteTimes = level.GetNoteTimes();
         double[] anglesArray = level.angles.ToArray();
         List<bool> midSpins = new();
@@ -450,6 +466,7 @@ public static class LevelUtils
                 anglesArray[i] = anglesArray[i - 1] + 180;
             }
         }
+
         int n = anglesArray.Length + 1;
         double[] SetSpeedBpm = new Double[n];
         double[] SetSpeedMultiplier = new Double[n];
@@ -460,8 +477,9 @@ public static class LevelUtils
             SetSpeedMultiplier[i] = 0;
             setSpeedIsMultiplier[i] = false;
         }
+
         Vector2 startPos = new Vector2(startPosition.X, startPosition.Y);
-        progressCallback?.Invoke(25,"初始化事件");
+        progressCallback?.Invoke(25, "初始化事件");
         List<BaseEvent> allEvents = level.DeserializeEvents().ToList();
         for (int a = 0; a < allEvents.Count; a++)
         {
@@ -481,12 +499,13 @@ public static class LevelUtils
                 }
             }
         }
+
         // 1. 并行批量创建Floor及其Mesh
         Floor[] tileArr = new Floor[n];
         Vector2[] posArr = new Vector2[n];
         float[] angle1Arr = new float[n];
         float[] angle2Arr = new float[n];
-        progressCallback?.Invoke(50,"初始化位置");
+        progressCallback?.Invoke(50, "初始化位置");
         List<PositionTrack> positionTracks = allEvents.Where(e => e is PositionTrack).Cast<PositionTrack>().ToList();
         for (int i = 0; i < n; i++)
         {
@@ -499,15 +518,18 @@ public static class LevelUtils
                 {
                     if (positionTrack.Floor == i && !positionTrack.EditorOnly)
                     {
-                        Vector2 position = new Vector2(positionTrack.PositionOffset[0].ToFloat(), positionTrack.PositionOffset[1].ToFloat());
+                        Vector2 position = new Vector2(positionTrack.PositionOffset[0].ToFloat(),
+                            positionTrack.PositionOffset[1].ToFloat());
                         startPos += new Vector2(position.X * Floor.length * 2, position.Y * Floor.length * 2);
                     }
                 }
             }
+
             posArr[i] = new(startPos.X, startPos.Y);
             angle1Arr[i] = angle1;
             angle2Arr[i] = angle2;
-            Vector2 step = new Vector2(Floor.length * 2 * FloatMath.Cos(angle1, true), Floor.length * 2 * FloatMath.Sin(angle1, true));
+            Vector2 step = new Vector2(Floor.length * 2 * FloatMath.Cos(angle1, true),
+                Floor.length * 2 * FloatMath.Sin(angle1, true));
             startPos += (step);
             Floor tile = new Floor(angle1Arr[i], angle2Arr[i] - 180, posArr[i]);
             if (i == anglesArray.Length)
@@ -518,10 +540,12 @@ public static class LevelUtils
             {
                 tile.isMidspin = (midSpins[i]);
             }
+
             tile.angle = i == anglesArray.Length ? (float)anglesArray[i - 1] + 180 : (float)anglesArray[i];
             tileArr[i] = tile;
         }
-        progressCallback?.Invoke(75,"初始化变速与链表关系");
+
+        progressCallback?.Invoke(75, "初始化变速与链表关系");
         double bpm = level.GetSetting<double>("bpm");
         bool isCW = true;
         for (int i = 0; i < tileArr.Length; i++)
@@ -535,27 +559,77 @@ public static class LevelUtils
             {
                 bpm = SetSpeedBpm[i];
             }
+
             tile.bpm = bpm;
             if (level.HasEvents(i, EventType.Twirl))
             {
                 isCW = !isCW;
             }
+
             tile.isCW = isCW;
             tile.index = i;
             if (i < tileArr.Length - 1)
             {
                 tile.nextFloor = tileArr[i + 1];
             }
+
             if (i > 0)
             {
                 tile.lastFloor = tileArr[i - 1];
             }
+
             tile.entryTime = noteTimes[i];
             tile.renderOrder = -i;
+            tile.events = allEvents.Where(x => x.Floor == i).ToList();
             floors.Add(tile);
-            progressCallback?.Invoke(75,$"初始化变速与链表关系({i}/{tileArr.Length - 1})");
+            progressCallback?.Invoke(75, $"初始化变速与链表关系({i}/{tileArr.Length - 1})");
         }
-        progressCallback?.Invoke(100,"完成");
+
+        progressCallback?.Invoke(100, "完成");
         return floors;
+    }
+
+    /// <summary>
+    /// Get the floor index corresponding to a specific note time in milliseconds
+    /// 获取与特定音符时间（以毫秒为单位）对应的地板索引
+    /// </summary>
+    /// <param name="level">The level to analyze / 要分析的关卡</param>
+    /// <param name="noteTimeSecond">The note time in seconds / 以秒为单位的音符时间</param>
+    /// <returns>The floor index / 地板索引</returns>
+    public static int GetFloorIndexByNoteTime(this Level level, double noteTimeSecond)
+    {
+        List<double> noteTimes = level.GetNoteTimes(true);
+        double targetTime = noteTimeSecond * 1000;
+
+        int left = 0;
+        int right = noteTimes.Count - 1;
+
+        // 如果目标时间大于所有元素，直接返回最后一个索引
+        if (targetTime >= noteTimes[right])
+        {
+            return right;
+        }
+
+        while (left <= right)
+        {
+            int mid = left + (right - left) / 2;
+
+            if (noteTimes[mid] >= targetTime)
+            {
+                // 如果mid是第一个满足条件的元素，或者是当前元素满足条件但前一个不满足
+                if (mid == 0 || noteTimes[mid - 1] < targetTime)
+                {
+                    return mid;
+                }
+
+                right = mid - 1;
+            }
+            else
+            {
+                left = mid + 1;
+            }
+        }
+
+        return noteTimes.Count - 1;
     }
 }
